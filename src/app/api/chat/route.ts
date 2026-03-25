@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return new Response(JSON.stringify({ history }), { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Fetch History Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Internal Server Error" }), { status: 500 });
   }
 }
 
@@ -152,6 +152,7 @@ export async function POST(req: NextRequest) {
     // Use 'gemini-1.5-flash-latest' for robust tool compatibility.
     const actualModel = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-latest", 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tools: tools as any,
       systemInstruction: `Lu adalah Patih AI, asisten Sultan Tuan Andrian. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'. Manage jadwal, tugas, habit, dan mimpi (goals). Lu adalah Life Coach yang ngebantu bos Andrian buat terus glowup. Gunakan Markdown. 
 
@@ -160,7 +161,7 @@ CRITICAL: Gunakan TOOLS untuk mengelola data. JANGAN PERNAH mengetik format pema
 Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
     }, { apiVersion: 'v1beta' });
 
-    const chatContent: Content[] = (history || []).map((msg: any) => ({
+    const chatContent: Content[] = (history || []).map((msg: { role: string; content: string }) => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content } as Part],
     }));
@@ -198,7 +199,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
             // Handle Tool logic
             let toolResponse = null;
             if (toolCall.name === "get_schedule") {
-              const { day } = toolCall.args as any;
+              const { day } = toolCall.args as { day?: string };
               const { data, error: dbErr } = await supabase.from('schedules').select('*').eq('day_of_week', day || todayNameEn);
               if (dbErr) {
                 console.error("get_schedule error:", dbErr);
@@ -208,7 +209,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
               }
             }
             else if (toolCall.name === "add_event") {
-              const { title, date, start_time, end_time, event_type } = toolCall.args as any;
+              const { title, date, start_time, end_time } = toolCall.args as { title: string; date: string; start_time: string; end_time: string; event_type: string };
               const { data, error: dbErr } = await supabase.from('events').insert({
                 user_id: user.id, title, event_date: date, start_time, end_time
               }).select();
@@ -230,7 +231,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
               }
             }
             else if (toolCall.name === "delete_event") {
-              const { id } = toolCall.args as any;
+              const { id } = toolCall.args as { id: string };
               const { error: dbErr } = await supabase.from('events').delete().eq('id', id).eq('user_id', user.id);
               if (dbErr) {
                 console.error("delete_event error:", dbErr);
@@ -240,7 +241,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
               }
             }
             else if (toolCall.name === "add_task") {
-              const { title, priority, deadline, start_date } = toolCall.args as any;
+              const { title, priority, deadline, start_date } = toolCall.args as { title: string; priority?: string; deadline?: string; start_date?: string };
               const { error: dbErr } = await supabase.from('tasks').insert({
                 user_id: user.id, title, priority: priority || 'Medium', deadline: deadline || null, start_date: start_date || null
               });
@@ -262,15 +263,15 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
             }
             else if (toolCall.name === "add_dream") {
               try {
-                const { title, description, target_date } = toolCall.args as any;
+                const { title, description, target_date } = toolCall.args as { title: string; description?: string; target_date?: string };
                 const { data, error: dbErr } = await supabase.from('dreams').insert({
                   user_id: user.id, title, description, target_date
                 }).select();
                 if (dbErr) throw dbErr;
                 toolResponse = { name: "add_dream", response: { success: true, dream: data?.[0] } };
-              } catch (e: any) {
+              } catch (e) {
                 console.error("add_dream error:", e);
-                toolResponse = { name: "add_dream", response: { success: false, error: e.message } };
+                toolResponse = { name: "add_dream", response: { success: false, error: e instanceof Error ? e.message : String(e) } };
               }
             }
             else if (toolCall.name === "list_dreams") {
@@ -278,14 +279,14 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                 const { data, error: dbErr } = await supabase.from('dreams').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
                 if (dbErr) throw dbErr;
                 toolResponse = { name: "list_dreams", response: { dreams: data } };
-              } catch (e: any) {
+              } catch (e) {
                 console.error("list_dreams error:", e);
                 toolResponse = { name: "list_dreams", response: { error: "Daftar mimpi belum bisa diakses (tabel missing?)." } };
               }
             }
             else if (toolCall.name === "list_habit_logs") {
               try {
-                const { date } = toolCall.args as any;
+                const { date } = toolCall.args as { date?: string };
                 const targetDate = date || todayDateStr;
                 const { data, error: dbErr } = await supabase
                   .from('habit_logs')
@@ -294,7 +295,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                   .eq('completed_at', targetDate);
                 if (dbErr) throw dbErr;
                 toolResponse = { name: "list_habit_logs", response: { completed_habits: data } };
-              } catch (e: any) {
+              } catch (e) {
                 console.error("list_habit_logs error:", e);
                 toolResponse = { name: "list_habit_logs", response: { error: "Gagal ambil data habit." } };
               }
@@ -318,7 +319,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                     error: habitsRes.error || tasksRes.error || eventsRes.error || schedulesRes.error ? "Beberapa data gagal diambil, tapi Patih lanjut!" : null
                   } 
                 };
-              } catch (e: any) {
+              } catch (e) {
                 console.error("holistic context error:", e);
                 toolResponse = { name: "get_holistic_context", response: { error: "Gagal ambil data holistik." } };
               }
@@ -340,7 +341,7 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
           if (fullContent) {
             await supabase.from('chat_history').insert({ user_id: user.id, role: 'assistant', content: fullContent });
           }
-        } catch (err: any) {
+        } catch (err) {
           console.error("Stream error:", err);
           controller.enqueue(encoder.encode("Waduh bos, ada kendala teknis dikit nih. Coba lagi yak! 🙏"));
         } finally {
@@ -353,8 +354,8 @@ Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Chat Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Internal Server Error" }), { status: 500 });
   }
 }

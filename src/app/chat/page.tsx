@@ -18,7 +18,7 @@ export default function ChatPage() {
         const res = await fetch('/api/chat')
         const data = await res.json()
         if (data.history && data.history.length > 0) {
-          setMessages(data.history.map((m: any) => ({
+          setMessages(data.history.map((m: { role: string; content: string }) => ({
             role: m.role,
             content: m.content
           })))
@@ -27,7 +27,7 @@ export default function ChatPage() {
             { role: 'assistant', content: 'Halo bos! Ada yang bisa Patih bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
           ])
         }
-      } catch (err) {
+      } catch {
         setMessages([
           { role: 'assistant', content: 'Halo bos! Ada yang bisa Patih bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
         ])
@@ -49,7 +49,7 @@ export default function ChatPage() {
     const addKeywords = ['tambah', 'set', 'masukin', 'agenda', 'meeting', 'acara', 'buat']
     if (!addKeywords.some(kw => msg.includes(kw))) return null
 
-    let eventDate = new Date()
+    const eventDate = new Date()
     if (msg.includes('besok')) {
       eventDate.setDate(eventDate.getDate() + 1)
     } else if (msg.includes('lusa')) {
@@ -150,7 +150,7 @@ export default function ChatPage() {
       if (!response.ok) throw new Error("Gagal dapet balesan dari Patih.")
 
       const reader = response.body?.getReader()
-      const decoder = new TextEncoder().encode('').constructor === Uint8Array ? new TextDecoder() : null; // Simple check
+      // decoder was unused, removing it
 
       let accumulatedContent = ""
 
@@ -181,7 +181,7 @@ export default function ChatPage() {
           })
         }
       }
-    } catch (err: any) {
+    } catch {
       const worked = await handleLogicFallback(userMessage)
       if (worked) {
         setIsLoading(false)

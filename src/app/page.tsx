@@ -35,10 +35,51 @@ import Link from "next/link";
 
 import { TECH_QUOTES } from "@/lib/quotes";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dailyHabits: Record<string, any[]> = {
+  'Minggu': [
+    { id: '1', title: 'Ibadah/Refleksi', done: false, icon: Heart, xp: 20, time: 'Pagi' },
+    { id: '2', title: 'Persiapan Mingguan', done: false, icon: Brain, xp: 15, time: 'Sore' }
+  ],
+  'Senin': [
+    { id: '1', title: 'Minum Air (2L)', done: false, icon: Droplets, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Glowup Gym', done: false, icon: Dumbbell, xp: 30, time: 'Sore' },
+    { id: '3', title: 'Skincare-an Pagi', done: false, icon: Sparkles, xp: 5, time: 'Pagi' }
+  ],
+  'Selasa': [
+    { id: '1', title: 'Baca Buku 10 Hal', done: false, icon: BookOpen, xp: 15, time: 'Malam' },
+    { id: '2', title: 'Lari Pagi', done: false, icon: Wind, xp: 25, time: 'Pagi' }
+  ],
+  'Rabu': [
+    { id: '1', title: 'Meditasi 10 Menit', done: false, icon: Focus, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Work focus session', done: false, icon: Zap, xp: 20, time: 'Siang' }
+  ],
+  'Kamis': [
+    { id: '1', title: 'Push Up 50x', done: false, icon: PlusCircle, xp: 20, time: 'Sore' },
+    { id: '2', title: 'Kurangi Kopi', done: false, icon: Coffee, xp: 10, time: 'Siang' }
+  ],
+  'Jumat': [
+    { id: '1', title: 'Bersih-bersih Kamar', done: false, icon: Sparkles, xp: 15, time: 'Sore' },
+    { id: '2', title: 'Evaluasi Mingguan', done: false, icon: Brain, xp: 20, time: 'Malam' }
+  ],
+  'Sabtu': [
+    { id: '1', title: 'Jalan Santai', done: false, icon: Wind, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Nge-game Relax', done: false, icon: Zap, xp: 5, time: 'Malam' }
+  ]
+};
+
+const getDayName = () => {
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  return days[new Date().getDay()];
+};
+
 export default function Home() {
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [todayClasses, setTodayClasses] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [todayEvents, setTodayEvents] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [stats, setStats] = useState({ todayTotal: 0, eventCount: 0, pendingTasks: 0 });
   const [playerStats, setPlayerStats] = useState({
@@ -55,43 +96,8 @@ export default function Home() {
   const [isLevelUpModalOpen, setIsLevelUpModalOpen] = useState(false);
   const [justLeveledUpTo, setJustLeveledUpTo] = useState(1);
   const [tempStats, setTempStats] = useState({ weight: 0, height: 0, sleep: 0 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [habits, setHabits] = useState<any[]>([]);
-  const dailyHabits: { [key: string]: any[] } = {
-    'Minggu': [
-      { id: '1', title: 'Ibadah/Refleksi', done: false, icon: Heart, xp: 20, time: 'Pagi' },
-      { id: '2', title: 'Persiapan Mingguan', done: false, icon: Brain, xp: 15, time: 'Sore' }
-    ],
-    'Senin': [
-      { id: '1', title: 'Minum Air (2L)', done: false, icon: Droplets, xp: 10, time: 'Pagi' },
-      { id: '2', title: 'Glowup Gym', done: false, icon: Dumbbell, xp: 30, time: 'Sore' },
-      { id: '3', title: 'Skincare-an Pagi', done: false, icon: Sparkles, xp: 5, time: 'Pagi' }
-    ],
-    'Selasa': [
-      { id: '1', title: 'Baca Buku 10 Hal', done: false, icon: BookOpen, xp: 15, time: 'Malam' },
-      { id: '2', title: 'Lari Pagi', done: false, icon: Wind, xp: 25, time: 'Pagi' }
-    ],
-    'Rabu': [
-      { id: '1', title: 'Meditasi 10 Menit', done: false, icon: Focus, xp: 10, time: 'Pagi' },
-      { id: '2', title: 'Work focus session', done: false, icon: Zap, xp: 20, time: 'Siang' }
-    ],
-    'Kamis': [
-      { id: '1', title: 'Push Up 50x', done: false, icon: PlusCircle, xp: 20, time: 'Sore' },
-      { id: '2', title: 'Kurangi Kopi', done: false, icon: Coffee, xp: 10, time: 'Siang' }
-    ],
-    'Jumat': [
-      { id: '1', title: 'Bersih-bersih Kamar', done: false, icon: Sparkles, xp: 15, time: 'Sore' },
-      { id: '2', title: 'Evaluasi Mingguan', done: false, icon: Brain, xp: 20, time: 'Malam' }
-    ],
-    'Sabtu': [
-      { id: '1', title: 'Jalan Santai', done: false, icon: Wind, xp: 10, time: 'Pagi' },
-      { id: '2', title: 'Nge-game Relax', done: false, icon: Zap, xp: 5, time: 'Malam' }
-    ]
-  };
-
-  const getDayName = () => {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    return days[new Date().getDay()];
-  };
   const [loading, setLoading] = useState(true);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState('Semua');
@@ -202,9 +208,9 @@ export default function Home() {
 
       alert("Berhasil simpan data Glowup!");
       setIsStatsModalOpen(false);
-    } catch (e: any) {
-      console.error("Gagal update stats:", e);
-      alert(`Gagal menyimpan data: ${e.message || "Pastikan koneksi stabil."}`);
+    } catch (err) {
+      console.error("Gagal update stats:", err);
+      alert(`Gagal menyimpan data: ${err instanceof Error ? err.message : "Pastikan koneksi stabil."}`);
     } finally {
       setLoading(false);
     }
@@ -218,33 +224,6 @@ export default function Home() {
   }, []);
 
   const currentQuote = TECH_QUOTES[quoteIndex];
-  const [suggestedGaps, setSuggestedGaps] = useState<{ id: number, time: string }[]>([]);
-
-  useEffect(() => {
-    if (loading || (todayClasses.length === 0 && todayEvents.length === 0)) return;
-    const findGaps = () => {
-      const allItems = [
-        ...todayClasses.map(c => ({ start: c.start_time, end: c.end_time })),
-        ...todayEvents.filter(e => e.start_time && e.end_time).map(e => ({ start: e.start_time, end: e.end_time }))
-      ].sort((a, b) => a.start.localeCompare(b.start));
-
-      const foundGaps: { id: number, time: string }[] = [];
-      let lastEnd = "08:00";
-      allItems.forEach(item => {
-        if (item.start > lastEnd) {
-          const startMin = parseInt(item.start.split(':')[0]) * 60 + parseInt(item.start.split(':')[1]);
-          const lastEndMin = parseInt(lastEnd.split(':')[0]) * 60 + parseInt(lastEnd.split(':')[1]);
-          if (startMin - lastEndMin >= 30) {
-            foundGaps.push({ id: foundGaps.length + 1, time: lastEnd });
-          }
-        }
-        if (item.end > lastEnd) lastEnd = item.end;
-      });
-      if (lastEnd < "21:00") foundGaps.push({ id: foundGaps.length + 1, time: lastEnd });
-      setSuggestedGaps(foundGaps);
-    };
-    findGaps();
-  }, [loading, todayClasses, todayEvents]);
 
   useEffect(() => {
     async function getDashboardData() {
@@ -305,7 +284,8 @@ export default function Home() {
 
       const completedIds = habitLogs?.map(log => log.habit_id) || [];
       const todayHabits = dailyHabits[currentDay] || [];
-      setHabits(todayHabits.map(h => ({ ...h, done: completedIds.includes(h.id) })));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setHabits(todayHabits.map((h: any) => ({ ...h, done: completedIds.includes(h.id) })));
 
       const { data: scheduleData } = await supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', currentDay === 'Minggu' ? 'Sunday' : currentDay === 'Senin' ? 'Monday' : currentDay === 'Selasa' ? 'Tuesday' : currentDay === 'Rabu' ? 'Wednesday' : currentDay === 'Kamis' ? 'Thursday' : currentDay === 'Jumat' ? 'Friday' : 'Saturday').order('start_time', { ascending: true });
       const { data: eventData } = await supabase.from('events').select('*').eq('user_id', user.id).eq('event_date', todayIso);
@@ -323,7 +303,7 @@ export default function Home() {
       setLoading(false);
     }
     getDashboardData();
-  }, []);
+  }, [supabase]);
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 md:px-10 space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -443,9 +423,12 @@ export default function Home() {
             </div>
           </div>
           {[
-            ...todayEvents.map(e => ({ ...e, type: 'event', icon: Layout, label: 'Kesehatan' })), // Map to closer category
-            ...todayClasses.slice(0, 3).map(s => ({ ...s, type: 'schedule', icon: Activity, label: 'Pendidikan' })),
-            ...pendingTasks.slice(0, 2).map(t => ({ ...t, type: 'task', icon: CheckSquare, label: 'Bekerja', subject: t.title }))
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...todayEvents.map((e: any) => ({ ...e, type: 'event', icon: Layout, label: 'Kesehatan' })), // Map to closer category
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...todayClasses.slice(0, 3).map((s: any) => ({ ...s, type: 'schedule', icon: Activity, label: 'Pendidikan' })),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...pendingTasks.slice(0, 2).map((t: any) => ({ ...t, type: 'task', icon: CheckSquare, label: 'Bekerja', subject: t.title }))
           ].filter(item => activeCategory === 'Semua' || item.label === activeCategory).map((item, i) => (
             <Link
               href={item.type === 'task' ? '/tasks' : '/calendar'}
@@ -533,8 +516,9 @@ export default function Home() {
                     <Target size={14} className="text-indigo-400" />
                   </div>
                   <div className="space-y-3">
-                    {habits.map((habit, idx) => {
-                      const gap = suggestedGaps[idx];
+                    {habits.map((habit) => {
+                      // gap was unused, removing it or using it if needed.
+                      // const gap = suggestedGaps[idx];
                       return (
                         <div key={habit.id} className="flex items-center justify-between bg-white/5 p-3 px-4 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group/habit">
                           <div className="flex items-center space-x-3">
@@ -590,7 +574,8 @@ export default function Home() {
                   <Loader2 className="w-12 h-12 text-[#d4af37] animate-spin" />
                 </div>
               ) : todayClasses.length > 0 ? (
-                todayClasses.map((cls) => (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (todayClasses as any[]).map((cls: any) => (
                   <div key={cls.id} className="group relative p-4 md:p-7 rounded-[2rem] md:rounded-[2.5rem] border border-white/5 hover:border-[#d4af37]/40 hover:bg-white/5 transition-all duration-500 cursor-pointer">
                     <div className="flex items-center gap-4 md:gap-0">
                       <div className="w-10 h-10 md:w-16 md:h-16 bg-white/5 text-[#d4af37] rounded-[1.2rem] md:rounded-[2rem] flex-shrink-0 flex items-center justify-center md:mr-8 group-hover:scale-110 transition-transform">
@@ -623,7 +608,7 @@ export default function Home() {
               <div className="flex flex-col space-y-6">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.6em] text-[#d4af37] opacity-50">Kalam Patih</h3>
                 <p className="text-3xl font-black text-white uppercase tracking-tight leading-[1.1]">
-                  "{currentQuote.quote}"
+                  &quot;{currentQuote.quote}&quot;
                 </p>
               </div>
 

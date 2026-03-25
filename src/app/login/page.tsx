@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Loader2, ChevronRight, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 
 import NeuralBackground from '@/components/NeuralBackground'

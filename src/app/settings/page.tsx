@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Settings, User, Bell, Lock, Shield, X, Camera, Save, Plus, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Bell, Lock, Shield, X, Camera, Plus, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 

@@ -1,16 +1,16 @@
 import { Bell, Search, Settings, User, X, Info, CheckCircle2 } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar() {
   const pathname = usePathname()
-  const router = useRouter()
+  // router was unused
   const supabase = createClient()
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [userName, setUserName] = useState('Boss')
-  const [notifications, setNotifications] = useState<any[]>([
+  const [notifications] = useState<{ id: number; title: string; message: string; type: string; time: string }[]>([
     { id: 1, title: 'Selamat Datang!', message: 'Selamat datang di KalaPatih App, Ngab. Mari mulai berjuang!', type: 'info', time: 'Baru saja' },
     { id: 2, title: 'Lengkapi Profil', message: 'Tinggi dan berat badan lu belum lengkap nih.', type: 'warning', time: '1j yang lalu' }
   ])
@@ -23,7 +23,7 @@ export default function Navbar() {
       }
     }
     getUser()
-  }, [])
+  }, [supabase]);
   return (
     <header className="h-16 bg-black/40 backdrop-blur-2xl border-b border-white/10 sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10">

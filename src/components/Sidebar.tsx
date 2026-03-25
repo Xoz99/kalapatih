@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, Home, MessageSquare, Upload, CheckSquare, Settings, Bot, User, LogOut } from 'lucide-react'
+import { CalendarDays, Home, MessageSquare, Upload, CheckSquare, Settings, Bot, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -24,7 +24,7 @@ export default function Sidebar() {
   const [name, setName] = useState<string>('')
   const [level, setLevel] = useState<number>(1)
   const [xp, setXp] = useState<number>(0)
-  const [max_xp, setMaxXp] = useState<number>(100)
+  const [max_xp] = useState<number>(100)
 
   useEffect(() => {
     const getUser = async () => {

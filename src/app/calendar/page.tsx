@@ -3,13 +3,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
-  Clock, 
   MapPin, 
   Sparkles,
-  Search,
   Plus,
   Pencil,
   Trash2,
@@ -24,12 +21,12 @@ const MONTHS = [
 
 export default function CalendarPage() {
   const supabase = createClient()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<{ id: string; subject?: string; title?: string; type: string; day_of_week?: string; date_str?: string; start_time?: string; end_time?: string; room?: string; location?: string }[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentMonth, setCurrentMonth] = useState(new Date()) // Used for navigation
-  const [selectedDate, setSelectedDate] = useState(new Date()) // Used for detail view
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any>(null)
+  const [editingItem, setEditingItem] = useState<{ id: string; subject?: string; title?: string; type: string; day_of_week?: string; date_str?: string; start_time?: string; end_time?: string; room?: string; location?: string } | null>(null)
   
   // Form State
   const [formTitle, setFormTitle] = useState('')
@@ -79,7 +76,7 @@ export default function CalendarPage() {
       setLoading(false)
     }
     fetchData()
-  }, [])
+  }, [supabase]);
 
   const refreshData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -109,6 +106,7 @@ export default function CalendarPage() {
     setIsModalOpen(true)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleOpenEdit = (item: any) => {
     setEditingItem(item)
     setFormTitle(item.subject)
@@ -131,6 +129,7 @@ export default function CalendarPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = {
       user_id: user.id,
       title: formTitle,
@@ -214,11 +213,11 @@ export default function CalendarPage() {
   const selectedDateItems = useMemo(() => {
     const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const dayName = daysNames[selectedDate.getDay()]
-    const dateStr = formatDate(selectedDate)
+    const dateStrFormatted = formatDate(selectedDate)
     
     return items.filter(item => {
         if (item.type === 'schedule') return item.day_of_week === dayName
-        if (item.type === 'event') return item.date_str === dateStr
+        if (item.type === 'event') return item.date_str === dateStrFormatted
         return false
     }).sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''))
   }, [selectedDate, items])
@@ -337,7 +336,6 @@ export default function CalendarPage() {
                     const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
                     const d = new Date(dt.year, dt.month, dt.day)
                     const dayName = daysNames[d.getDay()]
-                    const dateStr = d.toISOString().split('T')[0]
                     
                     const dayItemsCount = items.filter(item => {
                         if (item.type === 'schedule') return item.day_of_week === dayName

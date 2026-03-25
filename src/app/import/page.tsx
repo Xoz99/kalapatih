@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { UploadCloud, FileText, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
+import { UploadCloud, FileText, Sparkles, Loader2 } from 'lucide-react'
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -35,8 +35,8 @@ export default function ImportPage() {
       } else {
         throw new Error(data.error || "Gagal nge-ekstrak jadwal.");
       }
-    } catch (err: any) {
-      alert("Waduh bos, ada error: " + err.message);
+    } catch (err) {
+      alert("Waduh bos, ada error: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setIsUploading(false);
     }

@@ -6,7 +6,7 @@ import { CheckCircle2, Circle, Clock, Plus, Trash2, AlertCircle, Loader2 } from 
 
 export default function TasksPage() {
   const supabase = createClient()
-  const [tasks, setTasks] = useState<any[]>([])
+  const [tasks, setTasks] = useState<{ id: string; title: string; is_done: boolean; priority?: string; start_date?: string; deadline?: string; created_at: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDeadline, setNewTaskDeadline] = useState('')
@@ -15,7 +15,8 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   async function fetchTasks() {
     const { data: { user } } = await supabase.auth.getUser()

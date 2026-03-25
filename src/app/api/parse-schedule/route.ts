@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const extractedData = await parseScheduleFromPDF(base64, file.type);
 
     // Insert into Supabase
-    const schedulesToInsert = extractedData.map((item: any) => ({
+    const schedulesToInsert = extractedData.map((item: { subject: string; day_of_week: string; start_time: string; end_time: string; room?: string; event_type?: string }) => ({
       user_id: user.id,
       subject: item.subject,
       day_of_week: item.day_of_week,
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         count: schedulesToInsert.length,
         data: schedulesToInsert 
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Parsing Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
   }
 }
