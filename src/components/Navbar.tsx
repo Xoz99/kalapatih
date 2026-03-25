@@ -14,7 +14,7 @@ export default function Navbar() {
     { id: 1, title: 'Selamat Datang!', message: 'Selamat datang di KalaPatih App, Ngab. Mari mulai berjuang!', type: 'info', time: 'Baru saja' },
     { id: 2, title: 'Lengkapi Profil', message: 'Tinggi dan berat badan lu belum lengkap nih.', type: 'warning', time: '1j yang lalu' }
   ])
- 
+
   useEffect(() => {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -51,7 +51,7 @@ export default function Navbar() {
 
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsNotifOpen(!isNotifOpen)}
               className="w-10 h-10 border border-white/5 rounded-xl flex items-center justify-center text-slate-500 hover:bg-white/5 hover:text-[#d4af37] transition-all relative"
             >
