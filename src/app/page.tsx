@@ -356,17 +356,20 @@ export default function Home() {
             <div
               key={idx}
               onClick={() => setIsStatsModalOpen(true)}
-              className={`bg-gradient-to-br ${stat.color} backdrop-blur-md px-3 py-2.5 rounded-2xl border border-white/5 flex items-center space-x-3 min-w-[100px] cursor-pointer hover:border-[#d4af37]/30 transition-all group animate-in fade-in slide-in-from-right-2 duration-500`}
+              className={`bg-gradient-to-br ${stat.color} backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5 flex items-center space-x-3 ${stat.label === 'STATUS' ? 'min-w-[170px]' : 'min-w-[125px]'} w-fit cursor-pointer hover:border-[#d4af37]/30 transition-all group animate-in fade-in slide-in-from-right-2 duration-500`}
               style={{ animationDelay: `${idx * 100}ms` }}
             >
-              <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center text-[#d4af37] group-hover:scale-110 transition-transform">
-                <stat.icon size={14} strokeWidth={2.5} />
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-black/40 flex items-center justify-center text-[#d4af37] group-hover:scale-110 transition-transform flex-shrink-0">
+                <stat.icon size={16} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0 pr-1">
                 <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
-                <span className="text-sm font-black text-white leading-none">
-                  {stat.value}<span className="text-[8px] text-slate-400 ml-0.5">{stat.unit}</span>
-                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className={`font-black text-white leading-tight ${stat.label === 'STATUS' ? 'text-[9px] md:text-[10px] whitespace-nowrap' : 'text-sm md:text-base'}`}>
+                    {stat.value}
+                  </span>
+                  {stat.unit && <span className="text-[8px] text-slate-400 font-bold uppercase">{stat.unit}</span>}
+                </div>
               </div>
             </div>
           ))}
@@ -432,7 +435,7 @@ export default function Home() {
                       <span className="text-[8px] md:text-[10px] font-black text-[#d4af37]">{i}</span>
                     </div>
                   ))}
-                  <div className="ml-2 text-[8px] font-black text-black/80 uppercase tracking-widest pl-1">
+                  <div className="ml-3 text-[8px] font-black text-black/80 uppercase tracking-widest pl-1">
                     {stats.pendingTasks} Tertunda
                   </div>
                 </div>

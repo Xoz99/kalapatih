@@ -9,10 +9,21 @@ export default function Navbar() {
   const router = useRouter()
   const supabase = createClient()
   const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [userName, setUserName] = useState('Boss')
   const [notifications, setNotifications] = useState<any[]>([
     { id: 1, title: 'Selamat Datang!', message: 'Selamat datang di KalaPatih App, Ngab. Mari mulai berjuang!', type: 'info', time: 'Baru saja' },
     { id: 2, title: 'Lengkapi Profil', message: 'Tinggi dan berat badan lu belum lengkap nih.', type: 'warning', time: '1j yang lalu' }
   ])
+ 
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Boss')
+      }
+    }
+    getUser()
+  }, [])
   return (
     <header className="h-16 bg-black/40 backdrop-blur-2xl border-b border-white/10 sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10">
@@ -21,7 +32,7 @@ export default function Navbar() {
             {pathname === '/' ? 'Selamat Datang Kembali!' : 'KalaPatih App'}
           </span>
           <span className="text-sm font-black text-white uppercase tracking-tighter leading-none">
-            {pathname === '/' ? 'Hallo andrian 👋' :
+            {pathname === '/' ? `Hallo ${userName} 👋` :
               pathname === '/calendar' ? 'Weekly Schedule' :
                 pathname === '/chat' ? 'Patih AI Chat' :
                   pathname === '/tasks' ? 'Nugas List' :

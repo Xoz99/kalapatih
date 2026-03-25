@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
@@ -11,13 +11,22 @@ export const metadata: Metadata = {
   title: "KalaPatih • Premium AI Assistant",
   description: "Asisten penjadwalan cerdas (AI) untuk mahasiswa",
   manifest: "/manifest.json",
-  themeColor: "#0d0d0d",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "KalaPatih",
   },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d0d0d",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 import ConditionalLayout from "@/components/ConditionalLayout";

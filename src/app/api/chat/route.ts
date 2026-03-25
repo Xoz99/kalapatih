@@ -111,16 +111,53 @@ export async function POST(req: NextRequest) {
             name: "list_tasks",
             description: "Melihat daftar tugas bos.",
             parameters: { type: "OBJECT", properties: {} },
+          },
+          {
+            name: "add_dream",
+            description: "Menyimpan mimpi atau target jangka panjang bos.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "string", description: "Judul mimpi/target" },
+                description: { type: "string", description: "Detail penjelasan mimpinya" },
+                target_date: { type: "string", description: "Estimasi tercapai (YYYY-MM-DD)" }
+              },
+              required: ["title"],
+            },
+          },
+          {
+            name: "list_dreams",
+            description: "Melihat daftar mimpi dan visi masa depan bos.",
+            parameters: { type: "OBJECT", properties: {} },
+          },
+          {
+            name: "list_habit_logs",
+            description: "Mengecek habit apa aja yang udah diselesaikan bos hari ini.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                date: { type: "string", description: "Tanggal pengecekan (YYYY-MM-DD)" }
+              }
+            },
+          },
+          {
+            name: "get_holistic_context",
+            description: "Mengambil rangkuman semua data bos (Habits, Tugas, Jadwal) buat disimpulin.",
+            parameters: { type: "OBJECT", properties: {} },
           }
         ],
       },
     ];
 
-    // Use 'gemini-flash-lite-latest' (8B version) for maximum token efficiency (cost-effective).
+    // Use 'gemini-1.5-flash-latest' for robust tool compatibility.
     const actualModel = genAI.getGenerativeModel({
-      model: "gemini-flash-lite-latest", 
+      model: "gemini-1.5-flash-latest", 
       tools: tools as any,
-      systemInstruction: `Lu adalah Patih AI, asisten Sultan Tuan Andrian. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'. Manage jadwal (Wajib/Acara) & Tugas. Gunakan Markdown. Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
+      systemInstruction: `Lu adalah Patih AI, asisten Sultan Tuan Andrian. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'. Manage jadwal, tugas, habit, dan mimpi (goals). Lu adalah Life Coach yang ngebantu bos Andrian buat terus glowup. Gunakan Markdown. 
+
+CRITICAL: Gunakan TOOLS untuk mengelola data. JANGAN PERNAH mengetik format pemanggilan API [PANGGIL API: ...] di dalam chat. Cukup panggil fungsinya lewat sistem.
+
+Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
     }, { apiVersion: 'v1beta' });
 
     const chatContent: Content[] = (history || []).map((msg: any) => ({
@@ -141,16 +178,20 @@ export async function POST(req: NextRequest) {
 
           // Iterate through stream
           for await (const chunk of result.stream) {
-            const part = chunk.candidates?.[0]?.content?.parts?.[0];
-
-            if (part?.functionCall) {
-              toolCall = part.functionCall;
-              break; // Handle tool separately
+            const parts = chunk.candidates?.[0]?.content?.parts || [];
+            
+            for (const part of parts) {
+              if (part.functionCall) {
+                toolCall = part.functionCall;
+                continue;
+              }
+              if (part.text) {
+                const text = part.text;
+                fullContent += text;
+                controller.enqueue(encoder.encode(text));
+              }
             }
-
-            const text = chunk.text();
-            fullContent += text;
-            controller.enqueue(encoder.encode(text));
+            if (toolCall) break;
           }
 
           if (toolCall) {
@@ -217,6 +258,69 @@ export async function POST(req: NextRequest) {
                 toolResponse = { name: "list_tasks", response: { error: "Gagal ambil daftar tugas." } };
               } else {
                 toolResponse = { name: "list_tasks", response: { tasks: data } };
+              }
+            }
+            else if (toolCall.name === "add_dream") {
+              try {
+                const { title, description, target_date } = toolCall.args as any;
+                const { data, error: dbErr } = await supabase.from('dreams').insert({
+                  user_id: user.id, title, description, target_date
+                }).select();
+                if (dbErr) throw dbErr;
+                toolResponse = { name: "add_dream", response: { success: true, dream: data?.[0] } };
+              } catch (e: any) {
+                console.error("add_dream error:", e);
+                toolResponse = { name: "add_dream", response: { success: false, error: e.message } };
+              }
+            }
+            else if (toolCall.name === "list_dreams") {
+              try {
+                const { data, error: dbErr } = await supabase.from('dreams').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+                if (dbErr) throw dbErr;
+                toolResponse = { name: "list_dreams", response: { dreams: data } };
+              } catch (e: any) {
+                console.error("list_dreams error:", e);
+                toolResponse = { name: "list_dreams", response: { error: "Daftar mimpi belum bisa diakses (tabel missing?)." } };
+              }
+            }
+            else if (toolCall.name === "list_habit_logs") {
+              try {
+                const { date } = toolCall.args as any;
+                const targetDate = date || todayDateStr;
+                const { data, error: dbErr } = await supabase
+                  .from('habit_logs')
+                  .select('*, habits(title)')
+                  .eq('user_id', user.id)
+                  .eq('completed_at', targetDate);
+                if (dbErr) throw dbErr;
+                toolResponse = { name: "list_habit_logs", response: { completed_habits: data } };
+              } catch (e: any) {
+                console.error("list_habit_logs error:", e);
+                toolResponse = { name: "list_habit_logs", response: { error: "Gagal ambil data habit." } };
+              }
+            }
+            else if (toolCall.name === "get_holistic_context") {
+              try {
+                const [habitsRes, tasksRes, eventsRes, schedulesRes] = await Promise.all([
+                  supabase.from('habit_logs').select('*, habits(title)').eq('user_id', user.id).eq('completed_at', todayDateStr),
+                  supabase.from('tasks').select('*').eq('user_id', user.id).eq('is_done', false),
+                  supabase.from('events').select('*').eq('user_id', user.id).eq('event_date', todayDateStr),
+                  supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', todayNameEn)
+                ]);
+                
+                toolResponse = { 
+                  name: "get_holistic_context", 
+                  response: { 
+                    habits_done_today: habitsRes.data || [],
+                    pending_tasks: tasksRes.data || [],
+                    events_today: eventsRes.data || [],
+                    university_schedule: schedulesRes.data || [],
+                    error: habitsRes.error || tasksRes.error || eventsRes.error || schedulesRes.error ? "Beberapa data gagal diambil, tapi Patih lanjut!" : null
+                  } 
+                };
+              } catch (e: any) {
+                console.error("holistic context error:", e);
+                toolResponse = { name: "get_holistic_context", response: { error: "Gagal ambil data holistik." } };
               }
             }
 
