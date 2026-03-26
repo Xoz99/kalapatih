@@ -349,7 +349,7 @@ export default function CalendarPage() {
             }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
-            <div className="p-6 relative z-10">
+            <div className="px-4 py-6 md:p-6 relative z-10">
               <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-5 md:hidden"></div>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-black text-white uppercase tracking-tighter">
@@ -382,7 +382,7 @@ export default function CalendarPage() {
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{formCategory === 'event' ? 'Nama Acara' : 'Nama Mata Kuliah'}</label>
                   <input
                     required type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
                     placeholder="Contoh: Kalkulus / Meeting..."
                   />
                 </div>
@@ -391,7 +391,7 @@ export default function CalendarPage() {
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><MapPin size={10} /> Ruangan</label>
                     <input
                       type="text" value={formRoom} onChange={e => setFormRoom(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
                       placeholder="Contoh: A-301 / Zoom"
                     />
                   </div>
@@ -400,22 +400,22 @@ export default function CalendarPage() {
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Calendar size={10} /> {formCategory === 'event' ? 'Tanggal' : 'Hari (Pilih tgl)'}</label>
                   <input
                     required type="date" value={formDate} onChange={e => setFormDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Mulai</label>
                     <input
                       required type="time" value={formStartTime} onChange={e => setFormStartTime(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Selesai</label>
                     <input
                       required type="time" value={formEndTime} onChange={e => setFormEndTime(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none"
                     />
                   </div>
                 </div>

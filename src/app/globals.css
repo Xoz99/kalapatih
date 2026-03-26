@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  background-color: #050505 !important;
+}
+
 :root {
   --background: #050505;
   --foreground: #fcfcfc;
@@ -47,4 +51,13 @@
 
 .gold-text-gradient {
   @apply bg-clip-text text-transparent bg-gradient-to-br from-[#d4af37] via-[#f9d976] to-[#d4af37];
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; pointer-events: none; }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.8s ease-out forwards;
 }

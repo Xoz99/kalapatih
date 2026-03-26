@@ -69,7 +69,7 @@ export default function LoginPage() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                 <div className="relative w-[800px] h-[800px] opacity-[0.07] animate-[pulse_10s_infinite] blur-sm">
                     <Image
-                        src="/assets/cyber-barong.png"
+                        src="/assets/cyber-barong-transparent.png"
                         alt="Cyber Barong Background"
                         fill
                         className="object-contain"
