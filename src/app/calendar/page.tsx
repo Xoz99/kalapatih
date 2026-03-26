@@ -43,6 +43,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [touchStart, setTouchStart] = useState(0)
 
   const [formTitle, setFormTitle] = useState('')
   const [formDate, setFormDate] = useState('')
@@ -164,7 +166,8 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="max-w-[1536px] mx-auto px-4 md:px-8 pb-32 md:pb-10 animate-in fade-in duration-700 space-y-6">
+    <>
+      <div className="max-w-[1536px] mx-auto px-4 md:px-8 pb-32 md:pb-10 animate-in fade-in duration-700 space-y-6">
 
       {/* Header */}
       <div className="space-y-1">
@@ -319,11 +322,32 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
-
-      {/* Add/Edit Modal */}
+      </div>
+      
+      {/* Add/Edit Modal (Moved outside animated root to cover entire viewport) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="w-full md:max-w-md bg-[#0d0d0d] border border-white/10 rounded-t-[2rem] md:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 relative">
+        <div 
+          className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-4 pb-6 md:p-6 bg-black/40 backdrop-blur-3xl animate-in fade-in duration-300"
+          style={{ WebkitBackdropFilter: 'blur(24px)' }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="w-full md:max-w-md bg-[#0d0d0d] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 relative transition-transform"
+            style={{ transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined }}
+            onClick={e => e.stopPropagation()}
+            onTouchStart={e => setTouchStart(e.touches[0].clientY)}
+            onTouchMove={e => {
+              const current = e.touches[0].clientY
+              const diff = current - touchStart
+              if (diff > 0) setDragOffset(diff)
+            }}
+            onTouchEnd={() => {
+              if (dragOffset > 100) {
+                setIsModalOpen(false)
+              }
+              setDragOffset(0)
+            }}
+          >
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
             <div className="p-6 relative z-10">
               <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-5 md:hidden"></div>
@@ -406,6 +430,6 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
