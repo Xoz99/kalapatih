@@ -1,192 +1,323 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import useSWR, { mutate } from 'swr'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, Circle, Clock, Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react'
+import { fetchTasks } from '@/lib/fetchers'
+import { TaskCardSkeleton, StatCardSkeleton } from '@/components/Skeleton'
+import {
+  CheckCircle2, Circle, Clock, Plus, Trash2,
+  AlertCircle, Loader2, Calendar, ChevronDown, ChevronUp,
+  Target, Zap, CheckSquare
+} from 'lucide-react'
+
+type Task = {
+  id: string
+  title: string
+  is_done: boolean
+  priority?: string
+  start_date?: string
+  deadline?: string
+  created_at: string
+}
+
+const TASKS_KEY = 'tasks'
 
 export default function TasksPage() {
   const supabase = createClient()
-  const [tasks, setTasks] = useState<{ id: string; title: string; is_done: boolean; priority?: string; start_date?: string; deadline?: string; created_at: string }[]>([])
-  const [loading, setLoading] = useState(true)
+
+  const { data: tasks = [], isLoading } = useSWR<Task[]>(TASKS_KEY, fetchTasks, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  })
+
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDeadline, setNewTaskDeadline] = useState('')
   const [newTaskStartDate, setNewTaskStartDate] = useState('')
+  const [newTaskPriority, setNewTaskPriority] = useState<'High' | 'Medium' | 'Low'>('Medium')
   const [isAdding, setIsAdding] = useState(false)
-
-  useEffect(() => {
-    fetchTasks()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
-
-  async function fetchTasks() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (data) setTasks(data)
-    setLoading(false)
-  }
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'done'>('pending')
 
   async function addTask() {
     if (!newTaskTitle.trim()) return
     setIsAdding(true)
-
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setIsAdding(false)
-      return
-    }
+    if (!user) { setIsAdding(false); return }
 
-    const { error } = await supabase.from('tasks').insert({
+    // Optimistic update
+    const optimistic: Task = {
+      id: `temp-${Date.now()}`,
+      title: newTaskTitle.trim(),
+      is_done: false,
+      priority: newTaskPriority,
+      start_date: newTaskStartDate || undefined,
+      deadline: newTaskDeadline || undefined,
+      created_at: new Date().toISOString(),
+    }
+    mutate(TASKS_KEY, (prev: Task[] = []) => [optimistic, ...prev], false)
+
+    await supabase.from('tasks').insert({
       user_id: user.id,
       title: newTaskTitle.trim(),
-      priority: 'Medium',
+      priority: newTaskPriority,
       start_date: newTaskStartDate || null,
-      deadline: newTaskDeadline || null
+      deadline: newTaskDeadline || null,
     })
 
-    if (!error) {
-      setNewTaskTitle('')
-      setNewTaskDeadline('')
-      setNewTaskStartDate('')
-      fetchTasks()
-    }
+    setNewTaskTitle('')
+    setNewTaskDeadline('')
+    setNewTaskStartDate('')
+    setNewTaskPriority('Medium')
+    setIsFormOpen(false)
     setIsAdding(false)
+    mutate(TASKS_KEY) // revalidate
   }
 
   async function toggleComplete(id: string, currentStatus: boolean) {
+    // Optimistic update
+    mutate(TASKS_KEY, (prev: Task[] = []) =>
+      prev.map(t => t.id === id ? { ...t, is_done: !currentStatus } : t), false
+    )
     await supabase.from('tasks').update({ is_done: !currentStatus }).eq('id', id)
-    fetchTasks()
+    mutate(TASKS_KEY)
   }
 
   async function deleteTask(id: string) {
+    // Optimistic update
+    mutate(TASKS_KEY, (prev: Task[] = []) => prev.filter(t => t.id !== id), false)
     await supabase.from('tasks').delete().eq('id', id)
-    fetchTasks()
+    mutate(TASKS_KEY)
+  }
+
+  const filteredTasks = tasks.filter(t => {
+    if (activeFilter === 'pending') return !t.is_done
+    if (activeFilter === 'done') return t.is_done
+    return true
+  })
+
+  const pendingCount = tasks.filter(t => !t.is_done).length
+  const doneCount = tasks.filter(t => t.is_done).length
+  const progressPct = tasks.length > 0 ? Math.round((doneCount / tasks.length) * 100) : 0
+
+  const priorityConfig = {
+    High: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', dot: 'bg-red-400', Icon: Zap },
+    Medium: { color: 'text-[#d4af37]', bg: 'bg-[#d4af37]/10 border-[#d4af37]/20', dot: 'bg-[#d4af37]', Icon: Target },
+    Low: { color: 'text-slate-400', bg: 'bg-white/5 border-white/10', dot: 'bg-slate-500', Icon: CheckSquare },
+  }
+
+  const isOverdue = (deadline?: string) => {
+    if (!deadline) return false
+    return new Date(deadline) < new Date()
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 space-y-10 animate-in fade-in duration-1000">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase">List Nugas <span className="gold-text-gradient">Biar Gak Dead</span> 📝</h1>
-          <p className="text-slate-500 mt-1 font-bold uppercase tracking-widest text-[10px] md:text-xs">Sikat sekarang biar weekend lu tenang, Ngab.</p>
-        </div>
+    <div className="max-w-3xl mx-auto px-4 md:px-6 pb-32 md:pb-10 space-y-6 animate-in fade-in duration-700">
+
+      {/* Header */}
+      <div className="space-y-1 pt-2">
+        <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none">
+          List Nugas <span className="gold-text-gradient">Biar Gak Dead</span> 📝
+        </h1>
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">
+          Sikat sekarang biar weekend lu tenang, Ngab.
+        </p>
       </div>
 
-      <div className="bg-[#0d0d0d] border border-white/5 shadow-2xl shadow-black rounded-[2.5rem] p-6 md:p-8 space-y-4">
-        <div className="flex items-center space-x-3 md:space-x-4">
+      {/* Stats Bar — skeleton while loading */}
+      {isLoading ? (
+        <StatCardSkeleton />
+      ) : (
+        <div className="bg-[#0d0d0d] border border-white/5 rounded-3xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-black text-white">{pendingCount}</div>
+                <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Pending</div>
+              </div>
+              <div className="w-px h-8 bg-white/5"></div>
+              <div className="text-center">
+                <div className="text-2xl font-black gold-text-gradient">{doneCount}</div>
+                <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Done</div>
+              </div>
+              <div className="w-px h-8 bg-white/5"></div>
+              <div className="text-center">
+                <div className="text-2xl font-black text-white">{tasks.length}</div>
+                <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Total</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-black gold-text-gradient">{progressPct}%</div>
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Progress</div>
+            </div>
+          </div>
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#aa8418] to-[#d4af37] rounded-full transition-all duration-1000"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form */}
+      <div className="bg-[#0d0d0d] border border-white/5 shadow-2xl shadow-black rounded-3xl overflow-hidden">
+        <div className="flex items-center gap-3 p-4">
           <input
             type="text"
-            placeholder="Ada tugas apa lagi hari ini, ngab?"
-            className="flex-1 bg-white/5 border border-white/10 rounded-3xl py-4 px-6 text-sm focus:outline-none focus:ring-4 focus:ring-gold-500/10 focus:border-gold-500/50 transition-all font-bold tracking-tight text-white placeholder:text-slate-600"
+            placeholder="Tambah tugas baru..."
+            className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#d4af37]/30 focus:border-[#d4af37]/50 transition-all"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTask()}
           />
           <button
+            onClick={() => setIsFormOpen(!isFormOpen)}
+            className="p-3.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-[#d4af37] rounded-2xl transition-all border border-white/5"
+          >
+            {isFormOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+          <button
             onClick={addTask}
             disabled={isAdding || !newTaskTitle.trim()}
-            className="bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black px-6 md:px-8 py-4 rounded-3xl font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-gold-900/40 flex items-center disabled:opacity-50 active:scale-95"
+            className="flex items-center gap-2 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black px-5 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs hover:brightness-110 transition-all shadow-lg disabled:opacity-50 active:scale-95"
           >
-            {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus size={20} />}
+            {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={18} />}
+            <span className="hidden sm:inline">Tambah</span>
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 px-2">
-          <div className="flex-1 w-full space-y-1.5">
-            <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] ml-2 opacity-70 italic">Mulai</span>
-            <input
-              type="datetime-local"
-              className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-6 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all hover:bg-white/10"
-              value={newTaskStartDate}
-              onChange={(e) => setNewTaskStartDate(e.target.value)}
-            />
+        {isFormOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex gap-2">
+              {(['High', 'Medium', 'Low'] as const).map(p => {
+                const cfg = priorityConfig[p]
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setNewTaskPriority(p)}
+                    className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${newTaskPriority === p ? `${cfg.bg} ${cfg.color}` : 'border-white/5 text-slate-600 hover:border-white/10'}`}
+                  >
+                    {p}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <Calendar size={10} className="text-[#d4af37]" /> Mulai
+                </span>
+                <input type="datetime-local"
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                  value={newTaskStartDate}
+                  onChange={(e) => setNewTaskStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <Clock size={10} className="text-[#d4af37]" /> Deadline
+                </span>
+                <input type="datetime-local"
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                  value={newTaskDeadline}
+                  onChange={(e) => setNewTaskDeadline(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex-1 w-full space-y-1.5">
-            <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] ml-2 opacity-70 italic font-serif">Deadline</span>
-            <input
-              type="datetime-local"
-              className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-6 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all hover:bg-white/10"
-              value={newTaskDeadline}
-              onChange={(e) => setNewTaskDeadline(e.target.value)}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 pb-20">
-        {loading ? (
-          <div className="flex justify-center p-20">
-            <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
-          </div>
-        ) : tasks.length > 0 ? (
-          tasks.map((task) => (
-            <div
-              key={task.id}
-              className={`flex items-center p-5 md:p-6 rounded-[2.5rem] border transition-all duration-500 group cursor-default shadow-sm ${task.is_done
-                ? 'bg-white/5 border-transparent opacity-40'
-                : 'bg-[#0d0d0d] border-white/5 hover:border-[#d4af37]/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black'
-                }`}
-            >
-              <button
-                onClick={() => toggleComplete(task.id, task.is_done)}
-                className={`mr-4 md:mr-6 transition-all transform hover:scale-110 ${task.is_done ? 'text-[#d4af37]' : 'text-slate-700 hover:text-[#d4af37]'}`}
+      {/* Filter Tabs */}
+      <div className="flex gap-2 bg-[#0d0d0d] border border-white/5 p-1.5 rounded-2xl">
+        {([
+          { key: 'pending', label: 'Pending', count: pendingCount },
+          { key: 'done', label: 'Selesai', count: doneCount },
+          { key: 'all', label: 'Semua', count: tasks.length },
+        ] as const).map(f => (
+          <button
+            key={f.key}
+            onClick={() => setActiveFilter(f.key)}
+            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFilter === f.key ? 'bg-[#d4af37] text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}
+          >
+            {f.label}
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeFilter === f.key ? 'bg-black/20 text-black' : 'bg-white/5'}`}>{f.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Task List */}
+      <div className="space-y-3">
+        {isLoading ? (
+          // Skeleton cards
+          Array.from({ length: 4 }).map((_, i) => <TaskCardSkeleton key={i} />)
+        ) : filteredTasks.length > 0 ? (
+          filteredTasks.map((task) => {
+            const pCfg = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.Medium
+            const overdue = isOverdue(task.deadline) && !task.is_done
+            return (
+              <div
+                key={task.id}
+                className={`group flex items-start gap-4 p-4 md:p-5 rounded-3xl border transition-all duration-300 ${task.id.startsWith('temp-') ? 'opacity-60' : ''} ${task.is_done
+                  ? 'bg-white/[0.02] border-white/[0.03] opacity-50'
+                  : overdue
+                    ? 'bg-red-500/5 border-red-500/20 hover:border-red-500/30'
+                    : 'bg-[#0d0d0d] border-white/5 hover:border-[#d4af37]/20 hover:bg-white/[0.02]'
+                  }`}
               >
-                {task.is_done ? <CheckCircle2 size={32} /> : <Circle size={32} />}
-              </button>
+                <button
+                  onClick={() => toggleComplete(task.id, task.is_done)}
+                  className={`mt-0.5 shrink-0 transition-all duration-300 hover:scale-110 active:scale-95 ${task.is_done ? 'text-[#d4af37]' : 'text-slate-700 hover:text-[#d4af37]'}`}
+                >
+                  {task.is_done
+                    ? <CheckCircle2 size={26} className="drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]" />
+                    : <Circle size={26} />
+                  }
+                </button>
 
-              <div className="flex-1 min-w-0">
-                <h3 className={`text-base md:text-lg font-black tracking-tight truncate ${task.is_done ? 'text-slate-500 line-through' : 'text-white'}`}>
-                  {task.title}
-                </h3>
-
-                <div className="flex flex-wrap items-center gap-4 mt-2 text-[10px] text-slate-600 font-black uppercase tracking-widest">
-                  <div className="flex items-center">
-                    <Clock size={12} className="mr-1.5 shrink-0 text-[#d4af37]" /> {new Date(task.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  {task.priority && (
-                    <span className={`px-2 py-0.5 rounded-md border ${task.priority === 'High' ? 'border-red-500/30 text-red-500/50' :
-                      task.priority === 'Medium' ? 'border-[#d4af37]/30 text-[#d4af37]/50' :
-                        'border-slate-700 text-slate-700'
-                      }`}>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <h3 className={`text-sm md:text-base font-black tracking-tight leading-snug ${task.is_done ? 'line-through text-slate-600' : overdue ? 'text-red-300' : 'text-white'}`}>
+                    {task.title}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-xl border ${pCfg.bg} ${pCfg.color}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${pCfg.dot}`}></span>
                       {task.priority}
                     </span>
-                  )}
-                  {task.deadline && (
-                    <div className="flex items-center bg-white/5 px-2 py-1 rounded-lg text-slate-300 border border-white/5">
-                      <span className="text-[#d4af37] mr-1.5 opacity-50">Deadline:</span>
-                      {new Date(task.deadline).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} {new Date(task.deadline).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
-                  {task.start_date && (
-                    <div className="flex items-center bg-white/5 px-2 py-1 rounded-lg text-slate-400 border border-white/5">
-                      <span className="text-[#d4af37] mr-1.5 opacity-50">Mulai:</span>
-                      {new Date(task.start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} {new Date(task.start_date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
+                    <span className="flex items-center gap-1 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                      <Clock size={10} />
+                      {new Date(task.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                    </span>
+                    {task.deadline && (
+                      <span className={`flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-xl border ${overdue ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                        <Calendar size={10} />
+                        {overdue ? '🔥 ' : ''}Deadline: {new Date(task.deadline).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => deleteTask(task.id)}
-                className="p-3 text-slate-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded-2xl hover:bg-red-500/10 shrink-0"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ))
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="p-2.5 text-slate-700 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-2xl hover:bg-red-500/10 shrink-0 active:scale-95"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )
+          })
         ) : (
-          <div className="text-center py-20 bg-[#0d0d0d] border border-dashed border-white/5 rounded-[3rem] shadow-2xl shadow-black">
-            <div className="w-20 h-20 bg-[#d4af37]/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-              <AlertCircle size={32} className="text-[#d4af37]" />
+          <div className="text-center py-16 bg-[#0d0d0d] border border-dashed border-white/5 rounded-[2.5rem]">
+            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={28} className="text-[#d4af37]" />
             </div>
-            <h3 className="text-white font-black text-xl uppercase tracking-tighter">Gak ada nugas nih, ngab? ✨</h3>
-            <p className="text-slate-600 text-[10px] font-bold mt-2 uppercase tracking-widest">Santuy amat hidup lu. Minimal satu gih biar gak gabut.</p>
+            <h3 className="text-white font-black text-lg uppercase tracking-tighter">
+              {activeFilter === 'done' ? 'Belum Ada yang Selesai' : 'Woh, Kosong Nih! ✨'}
+            </h3>
+            <p className="text-slate-600 text-[10px] font-bold mt-1.5 uppercase tracking-widest">
+              {activeFilter === 'done' ? 'Yuk sikat dulu tugasnya!' : 'Santuy amat hidup lu. Tambah satu dulu lah!'}
+            </p>
           </div>
         )}
       </div>

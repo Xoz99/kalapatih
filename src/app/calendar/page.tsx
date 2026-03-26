@@ -1,127 +1,91 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import useSWR, { mutate } from 'swr'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  MapPin, 
-  Sparkles,
-  Plus,
-  Pencil,
-  Trash2,
-  X
+import { fetchCalendarItems } from '@/lib/fetchers'
+import { CalendarItemSkeleton } from '@/components/Skeleton'
+import {
+  ChevronLeft, ChevronRight, MapPin, Plus, Pencil, Trash2, X, Clock, Calendar
 } from 'lucide-react'
 
-const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+const DAYS_SHORT = ['Mng', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+const MONTHS_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ]
+
+type Item = {
+  id: string
+  subject?: string
+  title?: string
+  type: string
+  day_of_week?: string
+  date_str?: string
+  event_date?: string
+  start_time?: string
+  end_time?: string
+  room?: string
+  location?: string
+}
+
+const CALENDAR_KEY = 'calendar-items'
 
 export default function CalendarPage() {
   const supabase = createClient()
-  const [items, setItems] = useState<{ id: string; subject?: string; title?: string; type: string; day_of_week?: string; date_str?: string; start_time?: string; end_time?: string; room?: string; location?: string }[]>([])
-  const [loading, setLoading] = useState(true)
+
+  const { data: items = [], isLoading } = useSWR<Item[]>(CALENDAR_KEY, fetchCalendarItems, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  })
+
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<{ id: string; subject?: string; title?: string; type: string; day_of_week?: string; date_str?: string; start_time?: string; end_time?: string; room?: string; location?: string } | null>(null)
-  
-  // Form State
+  const [editingItem, setEditingItem] = useState<Item | null>(null)
+
   const [formTitle, setFormTitle] = useState('')
   const [formDate, setFormDate] = useState('')
   const [formStartTime, setFormStartTime] = useState('')
   const [formEndTime, setFormEndTime] = useState('')
+  const [formRoom, setFormRoom] = useState('')
+  const [formCategory, setFormCategory] = useState<'event' | 'schedule'>('event')
 
   const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: scheduleData } = await supabase
-        .from('schedules')
-        .select('*')
-        .eq('user_id', user.id)
-
-      const { data: eventData } = await supabase
-        .from('events')
-        .select('*')
-        .eq('user_id', user.id)
-      
-      const merged = [
-        ...(scheduleData || []).map(s => ({ ...s, type: 'schedule' })),
-        ...(eventData || []).map(e => {
-            const [y, m, d] = e.event_date.split('-').map(Number);
-            const dateObj = new Date(y, m - 1, d);
-            const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            return { 
-                ...e, 
-                type: 'event', 
-                day_of_week: daysNames[dateObj.getDay()], 
-                subject: e.title,
-                date_str: e.event_date 
-            };
-        })
-      ]
-      setItems(merged)
-      setLoading(false)
-    }
-    fetchData()
-  }, [supabase]);
-
-  const refreshData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: scheduleData } = await supabase.from('schedules').select('*').eq('user_id', user.id)
-    const { data: eventData } = await supabase.from('events').select('*').eq('user_id', user.id)
-    
-    const merged = [
-      ...(scheduleData || []).map(s => ({ ...s, type: 'schedule' })),
-      ...(eventData || []).map(e => {
-          const [y, m, d] = e.event_date.split('-').map(Number);
-          const dateObj = new Date(y, m - 1, d);
-          const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          return { ...e, type: 'event', day_of_week: daysNames[dateObj.getDay()], subject: e.title, date_str: e.event_date };
-      })
-    ]
-    setItems(merged)
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
   }
 
   const handleOpenAdd = () => {
     setEditingItem(null)
+    setFormCategory('event')
     setFormTitle('')
     setFormDate(formatDate(selectedDate))
     setFormStartTime('19:00')
     setFormEndTime('20:00')
+    setFormRoom('')
     setIsModalOpen(true)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleOpenEdit = (item: any) => {
+  const handleOpenEdit = (item: Item) => {
     setEditingItem(item)
-    setFormTitle(item.subject)
+    setFormCategory(item.type as 'event' | 'schedule')
+    setFormTitle(item.subject || item.title || '')
     setFormDate(item.event_date || formatDate(selectedDate))
     setFormStartTime(item.start_time?.slice(0, 5) || '19:00')
     setFormEndTime(item.end_time?.slice(0, 5) || '20:00')
+    setFormRoom(item.room || '')
     setIsModalOpen(true)
   }
 
   const handleDelete = async (id: string, type: string) => {
     if (!confirm('Yakin mau hapus agenda ini, bos?')) return
+    mutate(CALENDAR_KEY, (prev: Item[] = []) => prev.filter(i => i.id !== id), false)
     const table = type === 'event' ? 'events' : 'schedules'
-    const { error } = await supabase.from(table).delete().eq('id', id)
-    if (error) alert('Gagal hapus: ' + error.message)
-    else refreshData()
+    await supabase.from(table).delete().eq('id', id)
+    mutate(CALENDAR_KEY)
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -129,325 +93,309 @@ export default function CalendarPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload: any = {
-      user_id: user.id,
-      title: formTitle,
-      event_date: formDate,
-      start_time: formStartTime,
-      end_time: formEndTime
-    }
+    const table = formCategory === 'event' ? 'events' : 'schedules'
+    const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const dayOfWeek = daysNames[new Date(formDate).getDay()]
+
+    const payload: any = formCategory === 'event' 
+      ? { title: formTitle, event_date: formDate, start_time: formStartTime, end_time: formEndTime }
+      : { subject: formTitle, day_of_week: dayOfWeek, start_time: formStartTime, end_time: formEndTime, room: formRoom }
 
     if (editingItem) {
-        const table = editingItem.type === 'event' ? 'events' : 'schedules'
-        const updatePayload = editingItem.type === 'event' 
-            ? { title: formTitle, event_date: formDate, start_time: formStartTime, end_time: formEndTime }
-            : { subject: formTitle, day_of_week: new Date(formDate).toLocaleDateString('en-US', { weekday: 'long' }), start_time: formStartTime, end_time: formEndTime }
-        
-        const { error } = await supabase.from(table).update(updatePayload).eq('id', editingItem.id)
-        if (error) alert('Gagal update: ' + error.message)
+      await supabase.from(table).update(payload).eq('id', editingItem.id)
     } else {
-        const { error } = await supabase.from('events').insert(payload)
-        if (error) alert('Gagal nambah: ' + error.message)
+      await supabase.from(table).insert({ ...payload, user_id: user.id })
     }
-
+    
     setIsModalOpen(false)
-    refreshData()
+    mutate(CALENDAR_KEY)
   }
 
-  // Grid Calculation
   const calendarGrid = useMemo(() => {
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
-    
-    const firstDayOfMonth = new Date(year, month, 1).getDay()
+    const firstDay = new Date(year, month, 1).getDay()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
-    
     const prevMonthDays = new Date(year, month, 0).getDate()
-    
     const grid = []
-    
-    // Fill leading days from previous month
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-        grid.push({
-            day: prevMonthDays - i,
-            month: month - 1,
-            year: month === 0 ? year - 1 : year,
-            isCurrentMonth: false
-        })
-    }
-    
-    // Fill current month days
-    for (let i = 1; i <= daysInMonth; i++) {
-        grid.push({
-            day: i,
-            month: month,
-            year: year,
-            isCurrentMonth: true
-        })
-    }
-    
-    // Fill trailing days from next month
-    const remainingSlots = 42 - grid.length
-    for (let i = 1; i <= remainingSlots; i++) {
-        grid.push({
-            day: i,
-            month: month + 1,
-            year: month === 11 ? year + 1 : year,
-            isCurrentMonth: false
-        })
-    }
-    
+    for (let i = firstDay - 1; i >= 0; i--)
+      grid.push({ day: prevMonthDays - i, month: month - 1, year: month === 0 ? year - 1 : year, isCurrentMonth: false })
+    for (let i = 1; i <= daysInMonth; i++)
+      grid.push({ day: i, month, year, isCurrentMonth: true })
+    const remaining = 42 - grid.length
+    for (let i = 1; i <= remaining; i++)
+      grid.push({ day: i, month: month + 1, year: month === 11 ? year + 1 : year, isCurrentMonth: false })
     return grid
   }, [currentMonth])
 
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
-  const goToToday = () => {
-    const today = new Date()
-    setCurrentMonth(new Date(today))
-    setSelectedDate(new Date(today))
-  }
+  const goToToday = () => { const t = new Date(); setCurrentMonth(new Date(t)); setSelectedDate(new Date(t)) }
 
-  // Filter items for the selected date
   const selectedDateItems = useMemo(() => {
     const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const dayName = daysNames[selectedDate.getDay()]
-    const dateStrFormatted = formatDate(selectedDate)
-    
+    const dateStr = formatDate(selectedDate)
     return items.filter(item => {
-        if (item.type === 'schedule') return item.day_of_week === dayName
-        if (item.type === 'event') return item.date_str === dateStrFormatted
-        return false
-    }).sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''))
+      if (item.type === 'schedule') return item.day_of_week === dayName
+      if (item.type === 'event') return item.date_str === dateStr
+      return false
+    }).sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
   }, [selectedDate, items])
 
+  const getItemCount = (dt: { day: number; month: number; year: number }) => {
+    const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const d = new Date(dt.year, dt.month, dt.day)
+    const dayName = daysNames[d.getDay()]
+    const dStr = formatDate(d)
+    return items.filter(item => {
+      if (item.type === 'schedule') return item.day_of_week === dayName
+      if (item.type === 'event') return item.date_str === dStr
+      return false
+    }).length
+  }
+
   return (
-    <div className="max-w-[1536px] mx-auto px-6 md:px-10 h-full flex flex-col lg:flex-row gap-8 animate-in fade-in duration-1000 pb-20 lg:pb-0">
-      
-      {/* Sidebar Detail View (Left side on Desktop, Top on Mobile) */}
-      <div className="w-full lg:w-80 shrink-0 space-y-8 flex flex-col">
-        <div className="flex flex-col">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter uppercase leading-none">Agenda <span className="gold-text-gradient block sm:inline">Gaskeun</span></h1>
-            <button 
-                onClick={handleOpenAdd}
-                className="lg:hidden p-3 bg-[#d4af37] text-black rounded-2xl shadow-lg shadow-gold-900/40 active:scale-95 transition-all"
-            >
-                <Plus size={20} />
-            </button>
-          </div>
-          <p className="text-slate-500 mt-3 font-bold uppercase tracking-widest text-[10px] md:text-xs opacity-80 leading-relaxed md:max-w-xs">
-            {selectedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-        </div>
+    <div className="max-w-[1536px] mx-auto px-4 md:px-8 pb-32 md:pb-10 animate-in fade-in duration-700 space-y-6">
 
-        <button 
-            onClick={handleOpenAdd}
-            className="hidden lg:flex items-center justify-center space-x-2 w-full py-4 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black rounded-3xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-gold-900/20 hover:scale-[1.02] active:scale-95 transition-all"
-        >
-            <Plus size={16} />
-            <span>Tambah Event</span>
-        </button>
-
-        <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar max-h-[400px] lg:max-h-none">
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Sparkles className="animate-spin text-[#d4af37]" />
-                </div>
-            ) : selectedDateItems.length > 0 ? (
-                selectedDateItems.map((item) => (
-                    <div key={`${item.type}-${item.id}`} className="bg-[#0d0d0d] border border-white/5 p-5 rounded-[2.2rem] shadow-2xl shadow-black hover:border-[#d4af37]/30 transition-all duration-300 group relative overflow-hidden">
-                         <div className="flex items-center justify-between mb-3">
-                            <span className={`text-[7px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${
-                                item.type === 'event' ? 'bg-white/10 text-slate-300' : 'bg-[#d4af37]/20 text-[#d4af37]'
-                            }`}>
-                                {item.type === 'event' ? 'Acara' : 'Matkul'}
-                            </span>
-                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleOpenEdit(item)} className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
-                                    <Pencil size={12} />
-                                </button>
-                                <button onClick={() => handleDelete(item.id, item.type)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors">
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                        </div>
-                        <h4 className="text-[11px] font-black text-white group-hover:text-[#d4af37] transition-colors uppercase tracking-tight mb-4">
-                            {item.subject}
-                        </h4>
-                        <div className="flex flex-col space-y-2">
-                             <div className="flex items-center text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                                <span className="text-white mr-1.5">{item.start_time?.slice(0, 5)}</span>
-                                <span className="text-slate-700">s/d</span>
-                                <span className="text-white ml-1.5">{item.end_time?.slice(0, 5)}</span>
-                            </div>
-                            {item.room && (
-                                <div className="flex items-center text-[9px] font-black text-slate-600 uppercase tracking-widest truncate">
-                                    <MapPin size={10} className="mr-1.5 text-[#d4af37] shrink-0" />
-                                    <span className="truncate">{item.room}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))
-            ) : (
-                <div className="py-20 border-2 border-dashed border-white/5 rounded-[3rem] flex flex-col items-center justify-center opacity-40">
-                    <span className="text-[20px] mb-2">🏖️</span>
-                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Santuy Bos, Jadwal Kosong Melompong</span>
-                </div>
-            )}
-        </div>
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none">
+          Agenda <span className="gold-text-gradient">Gaskeun</span> 📅
+        </h1>
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">
+          Semua jadwal kuliah &amp; acara lu ada di sini, bos.
+        </p>
       </div>
 
-      {/* Main Calendar Grid (Right side on Desktop) */}
-      <div className="flex-1 flex flex-col min-h-[500px] lg:min-h-0">
-        <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black text-white uppercase tracking-tighter">
-                {MONTHS[currentMonth.getMonth()]} <span className="text-slate-600">{currentMonth.getFullYear()}</span>
+      {/* Main Layout */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+
+        {/* Calendar Grid */}
+        <div className="w-full lg:flex-1 bg-[#0d0d0d] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl shadow-black">
+
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+            <h2 className="text-base font-black text-white uppercase tracking-tighter">
+              {MONTHS_ID[currentMonth.getMonth()]} <span className="text-slate-600">{currentMonth.getFullYear()}</span>
             </h2>
-            <div className="flex items-center bg-black/40 backdrop-blur-md shadow-2xl shadow-black border border-white/5 rounded-[2rem] p-1.5 shrink-0">
-                <button onClick={goToToday} className="px-4 py-2 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest text-[#d4af37] rounded-xl transition-all">Today</button>
-                <div className="w-px h-4 bg-white/5 mx-1"></div>
-                <button onClick={prevMonth} className="p-2.5 hover:bg-white/5 hover:text-[#d4af37] text-slate-500 rounded-xl transition-all"><ChevronLeft size={16} /></button>
-                <button onClick={nextMonth} className="p-2.5 hover:bg-white/5 hover:text-[#d4af37] text-slate-500 rounded-xl transition-all"><ChevronRight size={16} /></button>
+            <div className="flex items-center gap-1 bg-black/40 border border-white/5 rounded-xl p-1">
+              <button onClick={goToToday} className="px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest text-[#d4af37] hover:bg-white/5 rounded-lg transition-all">
+                Hari Ini
+              </button>
+              <div className="w-px h-4 bg-white/10"></div>
+              <button onClick={prevMonth} className="p-2 text-slate-500 hover:text-[#d4af37] hover:bg-white/5 rounded-lg transition-all"><ChevronLeft size={16} /></button>
+              <button onClick={nextMonth} className="p-2 text-slate-500 hover:text-[#d4af37] hover:bg-white/5 rounded-lg transition-all"><ChevronRight size={16} /></button>
             </div>
+          </div>
+
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 border-b border-white/5">
+            {DAYS_SHORT.map(day => (
+              <div key={day} className="py-2.5 text-center text-[9px] font-black text-slate-600 uppercase tracking-[0.1em]">{day}</div>
+            ))}
+          </div>
+
+          {/* Day Grid — skeleton overlay while loading */}
+          <div className="grid grid-cols-7 relative">
+            {calendarGrid.map((dt, i) => {
+              const isSelected = selectedDate.getDate() === dt.day && selectedDate.getMonth() === dt.month && selectedDate.getFullYear() === dt.year
+              const isToday = new Date().getDate() === dt.day && new Date().getMonth() === dt.month && new Date().getFullYear() === dt.year
+              const count = (!isLoading && dt.isCurrentMonth) ? getItemCount(dt) : 0
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(new Date(dt.year, dt.month, dt.day))}
+                  disabled={!dt.isCurrentMonth}
+                  className={`relative flex flex-col items-center justify-center h-12 border-b border-r border-white/[0.04] transition-all duration-150 ${
+                    !dt.isCurrentMonth ? 'opacity-15' : 'hover:bg-white/[0.04] active:bg-white/10'
+                  } ${isSelected ? 'bg-[#d4af37]/10' : ''}`}
+                >
+                  {isLoading && dt.isCurrentMonth ? (
+                    <div className="w-5 h-4 rounded bg-white/[0.06] animate-pulse" />
+                  ) : (
+                    <>
+                      <span className={`text-xs font-black leading-none ${isSelected ? 'text-[#d4af37]' : isToday ? 'text-[#d4af37] opacity-70' : 'text-slate-400'}`}>
+                        {dt.day}
+                      </span>
+                      <div className="flex gap-0.5 h-1 mt-1">
+                        {isToday && !isSelected && <div className="w-1 h-1 bg-[#d4af37] rounded-full opacity-60"></div>}
+                        {count > 0 && [...Array(Math.min(count, 3))].map((_, idx) => (
+                          <div key={idx} className={`h-1 rounded-full ${isSelected ? 'bg-[#d4af37] w-2' : 'bg-slate-700 w-1'}`}></div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {isSelected && <div className="absolute inset-x-0 bottom-0 h-[2px] bg-[#d4af37]"></div>}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
-        <div className="flex-1 bg-[#0d0d0d] border border-white/5 rounded-[3rem] shadow-2xl shadow-black overflow-hidden flex flex-col">
-            {/* Days Header */}
-            <div className="grid grid-cols-7 border-b border-white/5">
-                {DAYS_SHORT.map(day => (
-                    <div key={day} className="py-4 text-center text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{day}</div>
+        {/* Detail Panel */}
+        <div className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-6">
+          <div className="bg-[#0d0d0d] border border-white/5 rounded-[2rem] p-5 shadow-2xl shadow-black space-y-4">
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  {selectedDate.toLocaleDateString('id-ID', { weekday: 'long' })}
+                </p>
+                <h2 className="text-lg font-black text-white leading-tight">
+                  {selectedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </h2>
+              </div>
+              <button
+                onClick={handleOpenAdd}
+                className="flex items-center gap-1.5 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black px-3.5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:brightness-110 transition-all shadow-lg active:scale-95"
+              >
+                <Plus size={13} />
+                Tambah
+              </button>
+            </div>
+
+            {/* Skeleton while loading, items when ready */}
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => <CalendarItemSkeleton key={i} />)}
+              </div>
+            ) : selectedDateItems.length > 0 ? (
+              <div className="space-y-3">
+                {selectedDateItems.map((item) => (
+                  <div key={`${item.type}-${item.id}`} className="group relative bg-black/30 border border-white/5 rounded-2xl p-4 hover:border-[#d4af37]/20 transition-all duration-300 overflow-hidden">
+                    <div className={`absolute left-0 inset-y-0 w-1 ${item.type === 'event' ? 'bg-indigo-500' : 'bg-[#d4af37]'}`}></div>
+                    <div className="pl-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className={`inline-block text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest mb-1.5 ${item.type === 'event' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-[#d4af37]/10 text-[#d4af37]'}`}>
+                            {item.type === 'event' ? '📅 Acara' : '📚 Matkul'}
+                          </span>
+                          <h4 className="text-sm font-black text-white group-hover:text-[#d4af37] transition-colors truncate leading-snug">
+                            {item.subject || item.title}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            {item.start_time && (
+                              <span className="flex items-center gap-1 text-[10px] font-black text-slate-500">
+                                <Clock size={10} className="text-[#d4af37]" />
+                                {item.start_time?.slice(0, 5)} – {item.end_time?.slice(0, 5)}
+                              </span>
+                            )}
+                            {item.room && (
+                              <span className="flex items-center gap-1 text-[10px] font-black text-slate-500 max-w-full truncate">
+                                <MapPin size={10} className="text-[#d4af37] shrink-0" />
+                                <span className="truncate">{item.room}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
+                          <button onClick={() => handleOpenEdit(item)} className="p-1.5 hover:bg-white/10 rounded-xl text-slate-500 hover:text-white transition-colors">
+                            <Pencil size={12} />
+                          </button>
+                          <button onClick={() => handleDelete(item.id, item.type)} className="p-1.5 hover:bg-red-500/10 rounded-xl text-slate-500 hover:text-red-400 transition-colors">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-            </div>
-
-            {/* Grid Body */}
-            <div className="flex-1 grid grid-cols-7 grid-rows-6">
-                {calendarGrid.map((dt, i) => {
-                    const isSelected = selectedDate.getDate() === dt.day && 
-                                     selectedDate.getMonth() === dt.month && 
-                                     selectedDate.getFullYear() === dt.year;
-                    const isToday = new Date().getDate() === dt.day && 
-                                   new Date().getMonth() === dt.month && 
-                                   new Date().getFullYear() === dt.year;
-                    
-                    // Simple dot indicator if there's an event or schedule
-                    const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-                    const d = new Date(dt.year, dt.month, dt.day)
-                    const dayName = daysNames[d.getDay()]
-                    
-                    const dayItemsCount = items.filter(item => {
-                        if (item.type === 'schedule') return item.day_of_week === dayName
-                        if (item.type === 'event') return item.date_str === formatDate(d)
-                        return false
-                    }).length
-
-                    return (
-                        <button
-                            key={i}
-                            onClick={() => setSelectedDate(new Date(dt.year, dt.month, dt.day))}
-                            className={`relative flex flex-col items-center justify-center border-b border-r border-white/5 transition-all duration-300 group hover:bg-white/[0.02] ${
-                                !dt.isCurrentMonth ? 'opacity-20 pointer-events-none' : ''
-                            } ${isSelected ? 'bg-white/[0.05]' : ''}`}
-                        >
-                            <span className={`text-sm font-black transition-all ${
-                                isSelected ? 'text-[#d4af37] scale-125' : 
-                                isToday ? 'text-[#d4af37]' : 'text-slate-400'
-                            }`}>
-                                {dt.day}
-                            </span>
-                            {isToday && !isSelected && (
-                                <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#d4af37] rounded-full shadow-lg shadow-gold-900/40"></div>
-                            )}
-                            {dayItemsCount > 0 && dt.isCurrentMonth && (
-                                <div className="flex gap-0.5 mt-1.5">
-                                    {[...Array(Math.min(dayItemsCount, 3))].map((_, idx) => (
-                                        <div key={idx} className={`h-1 rounded-full transition-all ${isSelected ? 'bg-[#d4af37] w-2' : 'bg-slate-700 w-1'}`}></div>
-                                    ))}
-                                </div>
-                            )}
-                            {isSelected && (
-                                <div className="absolute inset-x-0 bottom-0 h-1 bg-[#d4af37] rounded-t-full shadow-lg shadow-gold-900/40"></div>
-                            )}
-                        </button>
-                    )
-                })}
-            </div>
+              </div>
+            ) : (
+              <div className="py-10 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 opacity-50">
+                <span className="text-2xl">🏖️</span>
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.15em]">Jadwal Kosong, Santuy Bos</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Manual Action Modal */}
+      {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                
-                <div className="p-8 md:p-10 relative z-10">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
-                            {editingItem ? 'Edit' : 'Tambah'} <span className="gold-text-gradient">Agenda</span>
-                        </h3>
-                        <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500 transition-all">
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleSave} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Judul Agenda</label>
-                            <input 
-                                required
-                                type="text" 
-                                value={formTitle}
-                                onChange={e => setFormTitle(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
-                                placeholder="Meeting Penting..."
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2 col-span-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Tanggal</label>
-                                <input 
-                                    required
-                                    type="date" 
-                                    value={formDate}
-                                    onChange={e => setFormDate(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all color-scheme-dark"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Mulai</label>
-                                <input 
-                                    required
-                                    type="time" 
-                                    value={formStartTime}
-                                    onChange={e => setFormStartTime(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all color-scheme-dark"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Selesai</label>
-                                <input 
-                                    required
-                                    type="time" 
-                                    value={formEndTime}
-                                    onChange={e => setFormEndTime(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all color-scheme-dark"
-                                />
-                            </div>
-                        </div>
-
-                        <button 
-                            type="submit"
-                            className="w-full py-5 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-gold-900/20 hover:scale-[1.02] active:scale-95 transition-all mt-4"
-                        >
-                            {editingItem ? 'Gas Update' : 'Gaskan Tambah'}
-                        </button>
-                    </form>
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="w-full md:max-w-md bg-[#0d0d0d] border border-white/10 rounded-t-[2rem] md:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
+            <div className="p-6 relative z-10">
+              <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-5 md:hidden"></div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
+                  {editingItem ? 'Edit' : 'Tambah'} <span className="gold-text-gradient">Agenda</span>
+                </h3>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all">
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleSave} className="space-y-4">
+                {/* Category Selection */}
+                <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setFormCategory('event')}
+                    className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${formCategory === 'event' ? 'bg-[#d4af37] text-black shadow-lg shadow-gold-900/20' : 'text-slate-500 hover:text-white'}`}
+                  >
+                    Acara
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormCategory('schedule')}
+                    className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${formCategory === 'schedule' ? 'bg-[#d4af37] text-black shadow-lg shadow-gold-900/20' : 'text-slate-500 hover:text-white'}`}
+                  >
+                    Jadwal Kuliah
+                  </button>
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{formCategory === 'event' ? 'Nama Acara' : 'Nama Mata Kuliah'}</label>
+                  <input
+                    required type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
+                    placeholder="Contoh: Kalkulus / Meeting..."
+                  />
+                </div>
+                {formCategory === 'schedule' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><MapPin size={10} /> Ruangan</label>
+                    <input
+                      type="text" value={formRoom} onChange={e => setFormRoom(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all placeholder:text-slate-700"
+                      placeholder="Contoh: A-301 / Zoom"
+                    />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Calendar size={10} /> {formCategory === 'event' ? 'Tanggal' : 'Hari (Pilih tgl)'}</label>
+                  <input
+                    required type="date" value={formDate} onChange={e => setFormDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Mulai</label>
+                    <input
+                      required type="time" value={formStartTime} onChange={e => setFormStartTime(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Selesai</label>
+                    <input
+                      required type="time" value={formEndTime} onChange={e => setFormEndTime(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-4 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black font-black uppercase tracking-[0.15em] text-xs rounded-2xl shadow-xl hover:brightness-110 active:scale-[0.98] transition-all"
+                >
+                  {editingItem ? '✅ Gas Update' : '🚀 Gaskan Tambah'}
+                </button>
+              </form>
             </div>
+          </div>
         </div>
       )}
     </div>

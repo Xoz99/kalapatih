@@ -26,7 +26,6 @@ import {
   Coffee,
   ArrowRight,
   MapPin,
-  Loader2,
   CheckSquare,
   Clock,
   Layout
@@ -38,33 +37,45 @@ import { TECH_QUOTES } from "@/lib/quotes";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dailyHabits: Record<string, any[]> = {
   'Minggu': [
-    { id: '1', title: 'Ibadah/Refleksi', done: false, icon: Heart, xp: 20, time: 'Pagi' },
-    { id: '2', title: 'Persiapan Mingguan', done: false, icon: Brain, xp: 15, time: 'Sore' }
+    { id: '1', title: 'Ibadah/Refleksi', minLevel: 1, done: false, icon: Heart, xp: 20, time: 'Pagi' },
+    { id: '2', title: 'Persiapan Mingguan', minLevel: 1, done: false, icon: Brain, xp: 15, time: 'Sore' },
+    { id: '3', title: 'Planning Besok', baseTitle: 'Planning Besok', type: 'planning', minLevel: 4, done: false, icon: Target, xp: 25, time: 'Malam' }
   ],
   'Senin': [
-    { id: '1', title: 'Minum Air (2L)', done: false, icon: Droplets, xp: 10, time: 'Pagi' },
-    { id: '2', title: 'Glowup Gym', done: false, icon: Dumbbell, xp: 30, time: 'Sore' },
-    { id: '3', title: 'Skincare-an Pagi', done: false, icon: Sparkles, xp: 5, time: 'Pagi' }
+    { id: '1', title: 'Minum Air', baseTitle: 'Minum Air', type: 'water', minLevel: 1, done: false, icon: Droplets, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Glowup Gym', minLevel: 1, done: false, icon: Dumbbell, xp: 30, time: 'Sore' },
+    { id: '3', title: 'Skincare-an Pagi', minLevel: 1, done: false, icon: Sparkles, xp: 5, time: 'Pagi' },
+    { id: '4', title: 'Baca Buku', baseTitle: 'Baca Buku', type: 'reading', minLevel: 3, done: false, icon: BookOpen, xp: 15, time: 'Malam' },
+    { id: '5', title: 'Meditasi 5 Menit', minLevel: 5, done: false, icon: Focus, xp: 20, time: 'Pagi' }
   ],
   'Selasa': [
-    { id: '1', title: 'Baca Buku 10 Hal', done: false, icon: BookOpen, xp: 15, time: 'Malam' },
-    { id: '2', title: 'Lari Pagi', done: false, icon: Wind, xp: 25, time: 'Pagi' }
+    { id: '1', title: 'Baca Buku', baseTitle: 'Baca Buku', type: 'reading', minLevel: 1, done: false, icon: BookOpen, xp: 15, time: 'Malam' },
+    { id: '2', title: 'Lari Pagi', minLevel: 1, done: false, icon: Wind, xp: 25, time: 'Pagi' },
+    { id: '3', title: 'Minum Air', baseTitle: 'Minum Air', type: 'water', minLevel: 3, done: false, icon: Droplets, xp: 10, time: 'Pagi' },
+    { id: '4', title: 'Push Up', baseTitle: 'Push Up', type: 'pushup', minLevel: 4, done: false, icon: PlusCircle, xp: 20, time: 'Sore' }
   ],
   'Rabu': [
-    { id: '1', title: 'Meditasi 10 Menit', done: false, icon: Focus, xp: 10, time: 'Pagi' },
-    { id: '2', title: 'Work focus session', done: false, icon: Zap, xp: 20, time: 'Siang' }
+    { id: '1', title: 'Meditasi 10 Menit', minLevel: 1, done: false, icon: Focus, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Work focus session', minLevel: 1, done: false, icon: Zap, xp: 20, time: 'Siang' },
+    { id: '3', title: 'Stretching', minLevel: 3, done: false, icon: Activity, xp: 15, time: 'Sore' },
+    { id: '4', title: 'Planning Hari Ini', minLevel: 5, done: false, icon: Target, xp: 20, time: 'Pagi' }
   ],
   'Kamis': [
-    { id: '1', title: 'Push Up 50x', done: false, icon: PlusCircle, xp: 20, time: 'Sore' },
-    { id: '2', title: 'Kurangi Kopi', done: false, icon: Coffee, xp: 10, time: 'Siang' }
+    { id: '1', title: 'Push Up', baseTitle: 'Push Up', type: 'pushup', minLevel: 1, done: false, icon: PlusCircle, xp: 20, time: 'Sore' },
+    { id: '2', title: 'Kurangi Kopi', minLevel: 1, done: false, icon: Coffee, xp: 10, time: 'Siang' },
+    { id: '3', title: 'Minum Air', baseTitle: 'Minum Air', type: 'water', minLevel: 3, done: false, icon: Droplets, xp: 10, time: 'Pagi' },
+    { id: '4', title: 'Baca Buku', baseTitle: 'Baca Buku', type: 'reading', minLevel: 5, done: false, icon: BookOpen, xp: 15, time: 'Malam' }
   ],
   'Jumat': [
-    { id: '1', title: 'Bersih-bersih Kamar', done: false, icon: Sparkles, xp: 15, time: 'Sore' },
-    { id: '2', title: 'Evaluasi Mingguan', done: false, icon: Brain, xp: 20, time: 'Malam' }
+    { id: '1', title: 'Bersih-bersih Kamar', minLevel: 1, done: false, icon: Sparkles, xp: 15, time: 'Sore' },
+    { id: '2', title: 'Evaluasi Mingguan', minLevel: 1, done: false, icon: Brain, xp: 20, time: 'Malam' },
+    { id: '3', title: 'Glowup Gym', minLevel: 3, done: false, icon: Dumbbell, xp: 30, time: 'Sore' },
+    { id: '4', title: 'Minum Air', baseTitle: 'Minum Air', type: 'water', minLevel: 4, done: false, icon: Droplets, xp: 10, time: 'Pagi' }
   ],
   'Sabtu': [
-    { id: '1', title: 'Jalan Santai', done: false, icon: Wind, xp: 10, time: 'Pagi' },
-    { id: '2', title: 'Nge-game Relax', done: false, icon: Zap, xp: 5, time: 'Malam' }
+    { id: '1', title: 'Jalan Santai', minLevel: 1, done: false, icon: Wind, xp: 10, time: 'Pagi' },
+    { id: '2', title: 'Nge-game Relax', minLevel: 1, done: false, icon: Zap, xp: 5, time: 'Malam' },
+    { id: '3', title: 'Planning Mingguan', minLevel: 5, done: false, icon: Target, xp: 20, time: 'Pagi' }
   ]
 };
 
@@ -122,7 +133,38 @@ export default function Home() {
         setIsLevelUpModalOpen(true);
       }
 
-      setPlayerStats(prev => ({ ...prev, xp: finalXp, level: newLevel }));
+      setPlayerStats(prev => ({ 
+        ...prev, 
+        xp: finalXp, 
+        level: newLevel, 
+        max_xp: 100 + (newLevel - 1) * 20 
+      }));
+
+      // If level up, refresh habits to unlock new ones and update titles
+      if (newLevel > playerStats.level) {
+        const currentDay = getDayName();
+        const todayHabitsPool = dailyHabits[currentDay] || [];
+        setHabits(prevHabits => {
+          const doneIds = prevHabits.filter(h => h.done).map(h => h.id);
+          return todayHabitsPool
+            .filter((h: any) => newLevel >= (h.minLevel || 1))
+            .map((h: any) => {
+              let dynamicTitle = h.title;
+              if (h.type === 'pushup') {
+                dynamicTitle = `Push Up ${10 + (newLevel * 5)}x`;
+              } else if (h.type === 'water') {
+                dynamicTitle = `Minum Air (${(1 + (newLevel * 0.2)).toFixed(1)}L)`;
+              } else if (h.type === 'reading') {
+                dynamicTitle = `Baca Buku ${5 + newLevel} Hal`;
+              }
+              return { 
+                ...h, 
+                title: dynamicTitle,
+                done: doneIds.includes(h.id) 
+              };
+            });
+        });
+      }
 
       // Persist to DB
       const todayIso = new Date().toISOString().split('T')[0];
@@ -251,13 +293,15 @@ export default function Home() {
         const dbWeight = userData.weight_kg ?? fallback?.weight ?? 0;
         const dbHeight = userData.height_cm ?? fallback?.height ?? 0;
         const dbSleep = userData.sleep_hours ?? fallback?.sleep ?? 0;
+        const dbLevel = userData.level ?? playerStats.level;
 
         setPlayerStats(prev => ({
           ...prev,
           weight: dbWeight,
           height: dbHeight,
           sleep: dbSleep,
-          level: userData.level ?? prev.level,
+          level: dbLevel,
+          max_xp: 100 + (dbLevel - 1) * 20,
           xp: userData.xp ?? prev.xp,
           name: userData.name ?? prev.name
         }));
@@ -267,7 +311,12 @@ export default function Home() {
           sleep: dbSleep
         });
       } else if (fallback) {
-        setPlayerStats(prev => ({ ...prev, ...fallback }));
+        const fallbackLevel = fallback.level ?? 1;
+        setPlayerStats(prev => ({ 
+          ...prev, 
+          ...fallback,
+          max_xp: 100 + (fallbackLevel - 1) * 20
+        }));
         setTempStats(fallback);
       }
 
@@ -283,9 +332,27 @@ export default function Home() {
       }
 
       const completedIds = habitLogs?.map(log => log.habit_id) || [];
-      const todayHabits = dailyHabits[currentDay] || [];
+      const todayHabitsPool = dailyHabits[currentDay] || [];
+      
+      const userLevel = userData?.level ?? fallback?.level ?? 1;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setHabits(todayHabits.map((h: any) => ({ ...h, done: completedIds.includes(h.id) })));
+      setHabits(todayHabitsPool.filter((h: any) => userLevel >= (h.minLevel || 1)).map((h: any) => {
+        let dynamicTitle = h.title;
+        if (h.type === 'pushup') {
+          dynamicTitle = `Push Up ${10 + (userLevel * 5)}x`;
+        } else if (h.type === 'water') {
+          dynamicTitle = `Minum Air (${(1 + (userLevel * 0.2)).toFixed(1)}L)`;
+        } else if (h.type === 'reading') {
+          dynamicTitle = `Baca Buku ${5 + userLevel} Hal`;
+        }
+
+        return { 
+          ...h, 
+          title: dynamicTitle,
+          done: completedIds.includes(h.id) 
+        };
+      }));
 
       const { data: scheduleData } = await supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', currentDay === 'Minggu' ? 'Sunday' : currentDay === 'Senin' ? 'Monday' : currentDay === 'Selasa' ? 'Tuesday' : currentDay === 'Rabu' ? 'Wednesday' : currentDay === 'Kamis' ? 'Thursday' : currentDay === 'Jumat' ? 'Friday' : 'Saturday').order('start_time', { ascending: true });
       const { data: eventData } = await supabase.from('events').select('*').eq('user_id', user.id).eq('event_date', todayIso);
@@ -390,78 +457,110 @@ export default function Home() {
           </div>
         </div>
       )}
-
       {/* Live Agenda Slider */}
       <div className="relative group">
         <div className="flex overflow-x-auto pb-8 gap-5 no-scrollbar snap-x snap-mandatory md:gap-6">
           {/* Today Summary Card */}
           <div className="w-[170px] h-[170px] md:w-auto md:h-auto md:min-w-[340px] snap-start flex-shrink-0">
-
-            <div className="w-full h-full md:min-h-[260px] bg-gradient-to-br from-[#d4af37] to-[#aa8418] p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-gold-900/20 flex flex-col items-start justify-between relative overflow-hidden group/card transition-all hover:scale-[1.02]">
-              <div className="absolute top-1 right-1 w-24 h-24 bg-white/20 rounded-full -mr-12 -mt-12 blur-2xl opacity-40"></div>
-
-              <div className="w-full text-left">
-                <p className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1 md:mb-4">Vibe Hari Ini</p>
-                <div className="flex flex-col items-start">
-                  <h3 className="text-4xl md:text-6xl font-black text-black tracking-tighter uppercase leading-none">{stats.todayTotal}</h3>
-                  <span className="text-[9px] font-black text-black/60 uppercase tracking-widest mt-0.5 md:mt-1">Agenda</span>
+            {loading ? (
+              <div className="w-full h-full md:min-h-[260px] bg-[#0d0d0d] border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-4 md:p-6 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="h-2 w-16 rounded bg-white/[0.06] animate-pulse" />
+                  <div className="h-12 w-20 rounded-xl bg-white/[0.06] animate-pulse" />
+                </div>
+                <div className="flex gap-2">
+                  {[0, 1, 2].map(i => <div key={i} className="w-6 h-6 rounded-full bg-white/[0.06] animate-pulse" />)}
                 </div>
               </div>
+            ) : (
+              <div className="w-full h-full md:min-h-[260px] bg-gradient-to-br from-[#d4af37] to-[#aa8418] p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-gold-900/20 flex flex-col items-start justify-between relative overflow-hidden group/card transition-all hover:scale-[1.02]">
+                <div className="absolute top-1 right-1 w-24 h-24 bg-white/20 rounded-full -mr-12 -mt-12 blur-2xl opacity-40"></div>
 
-              <div className="w-full">
-                <div className="flex items-center justify-start -space-x-1.5">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="w-6 h-6 md:w-9 md:h-9 rounded-full border-2 border-[#d4af37] bg-black flex items-center justify-center shadow-lg">
-                      <span className="text-[8px] md:text-[10px] font-black text-[#d4af37]">{i}</span>
+                <div className="w-full text-left">
+                  <p className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1 md:mb-4">Vibe Hari Ini</p>
+                  <div className="flex flex-col items-start">
+                    <h3 className="text-4xl md:text-6xl font-black text-black tracking-tighter uppercase leading-none">{stats.todayTotal}</h3>
+                    <span className="text-[9px] font-black text-black/60 uppercase tracking-widest mt-0.5 md:mt-1">Agenda</span>
+                  </div>
+                </div>
+
+                <div className="w-full">
+                  <div className="flex items-center justify-start -space-x-1.5">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="w-6 h-6 md:w-9 md:h-9 rounded-full border-2 border-[#d4af37] bg-black flex items-center justify-center shadow-lg">
+                        <span className="text-[8px] md:text-[10px] font-black text-[#d4af37]">{i}</span>
+                      </div>
+                    ))}
+                    <div className="ml-3 text-[8px] font-black text-black/80 uppercase tracking-widest pl-1">
+                      {stats.pendingTasks} Tertunda
                     </div>
-                  ))}
-                  <div className="ml-3 text-[8px] font-black text-black/80 uppercase tracking-widest pl-1">
-                    {stats.pendingTasks} Tertunda
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-          {[
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...todayEvents.map((e: any) => ({ ...e, type: 'event', icon: Layout, label: 'Kesehatan' })), // Map to closer category
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...todayClasses.slice(0, 3).map((s: any) => ({ ...s, type: 'schedule', icon: Activity, label: 'Pendidikan' })),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...pendingTasks.slice(0, 2).map((t: any) => ({ ...t, type: 'task', icon: CheckSquare, label: 'Bekerja', subject: t.title }))
-          ].filter(item => activeCategory === 'Semua' || item.label === activeCategory).map((item, i) => (
-            <Link
-              href={item.type === 'task' ? '/tasks' : '/calendar'}
-              key={`${item.type}-${item.id}-${i}`}
-              className="w-[170px] h-[170px] md:w-auto md:h-auto md:min-w-[340px] snap-start flex-shrink-0"
-            >
-              <div className="w-full h-full md:min-h-[260px] bg-[#0d0d0d] p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-white/5 shadow-2xl hover:border-[#d4af37]/30 transition-all duration-500 group/item relative overflow-hidden">
-                <div className="flex flex-col h-full relative z-10">
-                  <div className="flex items-center justify-between mb-2 md:mb-6">
-                    <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-transform group-hover/item:rotate-12 shadow-inner ${item.type === 'event' ? 'bg-[#d4af37]/10 text-[#d4af37]' :
-                      item.type === 'schedule' ? 'bg-indigo-500/10 text-indigo-400' :
-                        'bg-emerald-500/10 text-emerald-400'
-                      }`}>
-                      <item.icon size={16} className="stroke-[2.5] md:hidden" />
-                      <item.icon size={22} className="stroke-[2.5] hidden md:block" />
-                    </div>
-                    <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em]">{item.label}</span>
+
+          {loading ? (
+            // Skeleton agenda cards
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="w-[170px] h-[170px] md:w-auto md:h-auto md:min-w-[340px] snap-start flex-shrink-0">
+                <div className="w-full h-full md:min-h-[260px] bg-[#0d0d0d] border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-4 md:p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-2xl bg-white/[0.06] animate-pulse" />
+                    <div className="h-2 w-16 rounded bg-white/[0.06] animate-pulse" />
                   </div>
-                  <h4 className="text-sm md:text-xl font-black text-white uppercase tracking-tight line-clamp-3 md:line-clamp-2 md:min-h-[3.5rem] group-hover/item:text-[#d4af37] transition-colors flex-1">{item.subject || item.title}</h4>
-                  <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-2 md:pt-6">
-                    <div className="flex items-center text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">
-                      <Clock size={11} className="mr-1 md:mr-2 text-[#d4af37] md:hidden" />
-                      <Clock size={14} className="mr-2 text-[#d4af37] hidden md:block" />
-                      {item.start_time ? item.start_time.slice(0, 5) : 'Anytime'}
-                    </div>
-                    <ArrowRight size={14} className="text-slate-800 group-hover/item:translate-x-1 group-hover/item:text-[#d4af37] transition-all md:hidden" />
-                    <ArrowRight size={18} className="text-slate-800 group-hover/item:translate-x-1 group-hover/item:text-[#d4af37] transition-all hidden md:block" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-full rounded-lg bg-white/[0.06] animate-pulse" />
+                    <div className="h-4 w-3/4 rounded-lg bg-white/[0.06] animate-pulse" />
+                  </div>
+                  <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="h-3 w-16 rounded bg-white/[0.06] animate-pulse" />
+                    <div className="h-3 w-4 rounded bg-white/[0.06] animate-pulse" />
                   </div>
                 </div>
               </div>
-            </Link>
-          ))}
-
+            ))
+          ) : (
+            [
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...todayEvents.map((e: any) => ({ ...e, type: 'event', icon: Layout, label: 'Kesehatan' })),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...todayClasses.slice(0, 3).map((s: any) => ({ ...s, type: 'schedule', icon: Activity, label: 'Pendidikan' })),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...pendingTasks.slice(0, 2).map((t: any) => ({ ...t, type: 'task', icon: CheckSquare, label: 'Bekerja', subject: t.title }))
+            ].filter(item => activeCategory === 'Semua' || item.label === activeCategory).map((item, i) => (
+              <Link
+                href={item.type === 'task' ? '/tasks' : '/calendar'}
+                key={`${item.type}-${item.id}-${i}`}
+                className="w-[170px] h-[170px] md:w-auto md:h-auto md:min-w-[340px] snap-start flex-shrink-0"
+              >
+                <div className="w-full h-full md:min-h-[260px] bg-[#0d0d0d] p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-white/5 shadow-2xl hover:border-[#d4af37]/30 transition-all duration-500 group/item relative overflow-hidden">
+                  <div className="flex flex-col h-full relative z-10">
+                    <div className="flex items-center justify-between mb-2 md:mb-6">
+                      <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-transform group-hover/item:rotate-12 shadow-inner ${item.type === 'event' ? 'bg-[#d4af37]/10 text-[#d4af37]' :
+                        item.type === 'schedule' ? 'bg-indigo-500/10 text-indigo-400' :
+                          'bg-emerald-500/10 text-emerald-400'
+                        }`}>
+                        <item.icon size={16} className="stroke-[2.5] md:hidden" />
+                        <item.icon size={22} className="stroke-[2.5] hidden md:block" />
+                      </div>
+                      <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em]">{item.label}</span>
+                    </div>
+                    <h4 className="text-sm md:text-xl font-black text-white uppercase tracking-tight line-clamp-3 md:line-clamp-2 md:min-h-[3.5rem] group-hover/item:text-[#d4af37] transition-colors flex-1">{item.subject || item.title}</h4>
+                    <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-2 md:pt-6">
+                      <div className="flex items-center text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">
+                        <Clock size={11} className="mr-1 md:mr-2 text-[#d4af37] md:hidden" />
+                        <Clock size={14} className="mr-2 text-[#d4af37] hidden md:block" />
+                        {item.start_time ? item.start_time.slice(0, 5) : 'Anytime'}
+                      </div>
+                      <ArrowRight size={14} className="text-slate-800 group-hover/item:translate-x-1 group-hover/item:text-[#d4af37] transition-all md:hidden" />
+                      <ArrowRight size={18} className="text-slate-800 group-hover/item:translate-x-1 group-hover/item:text-[#d4af37] transition-all hidden md:block" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
           {/* Add New Card */}
           {activeCategory === 'Semua' && (
             <Link href="/chat" className="min-w-[240px] snap-start">
@@ -570,8 +669,20 @@ export default function Home() {
 
             <div className="space-y-6">
               {loading ? (
-                <div className="flex items-center justify-center py-24">
-                  <Loader2 className="w-12 h-12 text-[#d4af37] animate-spin" />
+                // Skeleton rows replacing the spinner
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 md:p-7 rounded-[2rem] border border-white/[0.04]">
+                      <div className="w-10 h-10 md:w-16 md:h-16 rounded-[1.5rem] bg-white/[0.06] animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-2.5">
+                        <div className="h-5 w-3/4 rounded-lg bg-white/[0.06] animate-pulse" />
+                        <div className="flex gap-3">
+                          <div className="h-3 w-24 rounded bg-white/[0.06] animate-pulse" />
+                          <div className="h-3 w-20 rounded bg-white/[0.06] animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : todayClasses.length > 0 ? (
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

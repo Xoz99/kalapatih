@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
@@ -16,6 +16,18 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
     const supabase = createClient()
+
+    // Auto-redirect if session exists
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                router.push('/')
+                router.refresh()
+            }
+        }
+        checkSession()
+    }, [supabase, router])
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault()

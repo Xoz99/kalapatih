@@ -149,9 +149,9 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    // Use 'gemini-1.5-flash-latest' for robust tool compatibility.
+    // gemini-2.0-flash-lite: free-tier compatible, supports function calling
     const actualModel = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest", 
+      model: "gemini-2.0-flash-lite", 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tools: tools as any,
       systemInstruction: `Lu adalah Patih AI, asisten Sultan Tuan Andrian. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'. Manage jadwal, tugas, habit, dan mimpi (goals). Lu adalah Life Coach yang ngebantu bos Andrian buat terus glowup. Gunakan Markdown. 
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
 CRITICAL: Gunakan TOOLS untuk mengelola data. JANGAN PERNAH mengetik format pemanggilan API [PANGGIL API: ...] di dalam chat. Cukup panggil fungsinya lewat sistem.
 
 Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
-    }, { apiVersion: 'v1beta' });
+    });
 
     const chatContent: Content[] = (history || []).map((msg: { role: string; content: string }) => ({
       role: msg.role === 'user' ? 'user' : 'model',
