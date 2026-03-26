@@ -7,7 +7,7 @@ import { fetchTasks } from '@/lib/fetchers'
 import { TaskCardSkeleton, StatCardSkeleton } from '@/components/Skeleton'
 import {
   CheckCircle2, Circle, Clock, Plus, Trash2,
-  AlertCircle, Loader2, Calendar, ChevronDown, ChevronUp,
+  AlertCircle, Loader2, Calendar, ChevronUp,
   Target, Zap, CheckSquare
 } from 'lucide-react'
 
@@ -32,8 +32,10 @@ export default function TasksPage() {
   })
 
   const [newTaskTitle, setNewTaskTitle] = useState('')
-  const [newTaskDeadline, setNewTaskDeadline] = useState('')
-  const [newTaskStartDate, setNewTaskStartDate] = useState('')
+  const [newStartDate, setNewStartDate] = useState('')
+  const [newStartTime, setNewStartTime] = useState('')
+  const [newDeadlineDate, setNewDeadlineDate] = useState('')
+  const [newDeadlineTime, setNewDeadlineTime] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState<'High' | 'Medium' | 'Low'>('Medium')
   const [isAdding, setIsAdding] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -45,14 +47,17 @@ export default function TasksPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setIsAdding(false); return }
 
+    const start_date = newStartDate && newStartTime ? `${newStartDate}T${newStartTime}:00` : newStartDate ? `${newStartDate}T00:00:00` : undefined
+    const deadline = newDeadlineDate && newDeadlineTime ? `${newDeadlineDate}T${newDeadlineTime}:00` : newDeadlineDate ? `${newDeadlineDate}T23:59:59` : undefined
+
     // Optimistic update
     const optimistic: Task = {
       id: `temp-${Date.now()}`,
       title: newTaskTitle.trim(),
       is_done: false,
       priority: newTaskPriority,
-      start_date: newTaskStartDate || undefined,
-      deadline: newTaskDeadline || undefined,
+      start_date,
+      deadline,
       created_at: new Date().toISOString(),
     }
     mutate(TASKS_KEY, (prev: Task[] = []) => [optimistic, ...prev], false)
@@ -61,13 +66,15 @@ export default function TasksPage() {
       user_id: user.id,
       title: newTaskTitle.trim(),
       priority: newTaskPriority,
-      start_date: newTaskStartDate || null,
-      deadline: newTaskDeadline || null,
+      start_date: start_date || null,
+      deadline: deadline || null,
     })
 
     setNewTaskTitle('')
-    setNewTaskDeadline('')
-    setNewTaskStartDate('')
+    setNewStartDate('')
+    setNewStartTime('')
+    setNewDeadlineDate('')
+    setNewDeadlineTime('')
     setNewTaskPriority('Medium')
     setIsFormOpen(false)
     setIsAdding(false)
@@ -173,58 +180,78 @@ export default function TasksPage() {
           />
           <button
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className="p-3.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-[#d4af37] rounded-2xl transition-all border border-white/5"
+            className={`p-3.5 rounded-2xl transition-all border ${isFormOpen ? 'bg-[#d4af37]/10 border-[#d4af37]/30 text-[#d4af37]' : 'bg-white/5 border-white/5 text-slate-400 hover:text-white'}`}
           >
-            {isFormOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
-          <button
-            onClick={addTask}
-            disabled={isAdding || !newTaskTitle.trim()}
-            className="flex items-center gap-2 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black px-5 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs hover:brightness-110 transition-all shadow-lg disabled:opacity-50 active:scale-95"
-          >
-            {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={18} />}
-            <span className="hidden sm:inline">Tambah</span>
+            {isFormOpen ? <ChevronUp size={18} /> : <Plus size={18} />}
           </button>
         </div>
 
         {isFormOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-300">
-            <div className="flex gap-2">
-              {(['High', 'Medium', 'Low'] as const).map(p => {
-                const cfg = priorityConfig[p]
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setNewTaskPriority(p)}
-                    className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${newTaskPriority === p ? `${cfg.bg} ${cfg.color}` : 'border-white/5 text-slate-600 hover:border-white/10'}`}
-                  >
-                    {p}
-                  </button>
-                )
-              })}
+          <div className="px-5 pb-5 space-y-5 border-t border-white/5 pt-5 animate-in slide-in-from-top-2 duration-300">
+            <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">Prioritas</span>
+              <div className="flex gap-2">
+                {(['High', 'Medium', 'Low'] as const).map(p => {
+                  const cfg = priorityConfig[p]
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setNewTaskPriority(p)}
+                      className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${newTaskPriority === p ? `${cfg.bg} ${cfg.color}` : 'bg-white/[0.02] border-white/5 text-slate-600 hover:border-white/10'}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1 flex items-center gap-1.5">
                   <Calendar size={10} className="text-[#d4af37]" /> Mulai
                 </span>
-                <input type="datetime-local"
-                  className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
-                  value={newTaskStartDate}
-                  onChange={(e) => setNewTaskStartDate(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <input type="date"
+                    className="flex-[1.5] bg-white/[0.05] border border-white/10 rounded-2xl py-3.5 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
+                    value={newStartDate}
+                    onChange={(e) => setNewStartDate(e.target.value)}
+                  />
+                  <input type="time"
+                    className="flex-1 bg-white/[0.05] border border-white/10 rounded-2xl py-3.5 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
+                    value={newStartTime}
+                    onChange={(e) => setNewStartTime(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+              <div className="space-y-2">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1 flex items-center gap-1.5">
                   <Clock size={10} className="text-[#d4af37]" /> Deadline
                 </span>
-                <input type="datetime-local"
-                  className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
-                  value={newTaskDeadline}
-                  onChange={(e) => setNewTaskDeadline(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <input type="date"
+                    className="flex-[1.5] bg-white/[0.05] border border-white/10 rounded-2xl py-3.5 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
+                    value={newDeadlineDate}
+                    onChange={(e) => setNewDeadlineDate(e.target.value)}
+                  />
+                  <input type="time"
+                    className="flex-1 bg-white/[0.05] border border-white/10 rounded-2xl py-3.5 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
+                    value={newDeadlineTime}
+                    onChange={(e) => setNewDeadlineTime(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
+
+            <button
+              onClick={addTask}
+              disabled={isAdding || !newTaskTitle.trim()}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:brightness-110 transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
+            >
+              {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus size={18} />}
+              🚀 Gaskan Tambah
+            </button>
           </div>
         )}
       </div>
@@ -300,9 +327,9 @@ export default function TasksPage() {
 
                 <button
                   onClick={() => deleteTask(task.id)}
-                  className="p-2.5 text-slate-700 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-2xl hover:bg-red-500/10 shrink-0 active:scale-95"
+                  className="p-3 text-slate-600 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-2xl hover:bg-red-500/10 shrink-0 active:scale-95 ml-2"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             )
