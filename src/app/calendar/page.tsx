@@ -400,7 +400,7 @@ export default function CalendarPage() {
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Calendar size={10} /> {formCategory === 'event' ? 'Tanggal' : 'Hari (Pilih tgl)'}</label>
                   <input
                     required type="date" value={formDate} onChange={e => setFormDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                    className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-4 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -408,14 +408,14 @@ export default function CalendarPage() {
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Mulai</label>
                     <input
                       required type="time" value={formStartTime} onChange={e => setFormStartTime(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none"
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none [color-scheme:dark]"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Clock size={10} /> Selesai</label>
                     <input
                       required type="time" value={formEndTime} onChange={e => setFormEndTime(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none"
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-3.5 px-3 md:px-5 text-sm font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none [color-scheme:dark]"
                     />
                   </div>
                 </div>

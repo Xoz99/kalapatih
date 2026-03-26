@@ -5,13 +5,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "KalaPatih • Premium AI Assistant",
+  title: "KalaYono • Premium AI Assistant",
   description: "Asisten penjadwalan cerdas (AI) untuk mahasiswa",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "KalaPatih",
+    title: "KalaYono",
   },
   formatDetection: {
     telephone: false,

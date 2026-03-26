@@ -166,7 +166,7 @@ export default function TasksPage() {
           <input
             type="text"
             placeholder="Tambah tugas baru..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#d4af37]/30 focus:border-[#d4af37]/50 transition-all"
+            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl py-3.5 px-5 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#d4af37]/30 focus:border-[#d4af37]/50 transition-all"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTask()}
@@ -209,7 +209,7 @@ export default function TasksPage() {
                   <Calendar size={10} className="text-[#d4af37]" /> Mulai
                 </span>
                 <input type="datetime-local"
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                  className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
                   value={newTaskStartDate}
                   onChange={(e) => setNewTaskStartDate(e.target.value)}
                 />
@@ -219,7 +219,7 @@ export default function TasksPage() {
                   <Clock size={10} className="text-[#d4af37]" /> Deadline
                 </span>
                 <input type="datetime-local"
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                  className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl py-3 px-4 text-xs font-bold text-white focus:outline-none focus:border-[#d4af37]/50 transition-all [color-scheme:dark]"
                   value={newTaskDeadline}
                   onChange={(e) => setNewTaskDeadline(e.target.value)}
                 />

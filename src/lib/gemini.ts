@@ -39,7 +39,7 @@ const schema: Schema = {
 
 export async function parseScheduleFromPDF(fileBase64: string, fileMimeType: string) {
   const model = genAI.getGenerativeModel({
-    model: "gemini-flash-lite-latest",
+    model: "gemini-2.5-flash-lite",
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: schema,

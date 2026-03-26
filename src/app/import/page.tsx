@@ -118,7 +118,7 @@ export default function ImportPage() {
       const data = await response.json();
 
       if (data.success) {
-        setResult(`Gokil bos! Patih berhasil nge-ekstrak ${data.count} mata kuliah ke kalender lu.`);
+        setResult(`Gokil bos! Yono berhasil nge-ekstrak ${data.count} mata kuliah ke kalender lu.`);
       } else {
         throw new Error(data.error || "Gagal nge-ekstrak jadwal.");
       }
@@ -167,7 +167,7 @@ export default function ImportPage() {
             <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">
               Taruh PDF di Sini, Bos!
             </h3>
-            <p className="text-[10px] md:text-xs font-bold text-slate-600 mb-8 uppercase tracking-widest leading-relaxed max-w-xs">Pastikan file `.pdf` jadwal resmi dari kampus lu ya biar Patih gak bingung.</p>
+            <p className="text-[10px] md:text-xs font-bold text-slate-600 mb-8 uppercase tracking-widest leading-relaxed max-w-xs">Pastikan file `.pdf` jadwal resmi dari kampus lu ya biar Yono gak bingung.</p>
             
             <label className="cursor-pointer bg-gradient-to-br from-[#d4af37] to-[#aa8418] shadow-lg shadow-gold-900/40 text-black px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95">
               Pilih File PDF

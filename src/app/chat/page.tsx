@@ -15,7 +15,8 @@ export default function ChatPage() {
   useEffect(() => {
     async function loadHistory() {
       try {
-        const res = await fetch('/api/chat')
+        const res = await fetch('/api/chat', { cache: 'no-store' })
+        if (!res.ok) throw new Error("Gagal ambil history")
         const data = await res.json()
         if (data.history && data.history.length > 0) {
           setMessages(data.history.map((m: { role: string; content: string }) => ({
@@ -24,12 +25,12 @@ export default function ChatPage() {
           })))
         } else {
           setMessages([
-            { role: 'assistant', content: 'Halo bos! Ada yang bisa Patih bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
+            { role: 'assistant', content: 'Halo bos! Ada yang bisa Yono bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
           ])
         }
       } catch {
         setMessages([
-          { role: 'assistant', content: 'Halo bos! Ada yang bisa Patih bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
+          { role: 'assistant', content: 'Halo bos! Ada yang bisa Yono bantu soal jadwal kuliah atau agenda lu hari ini? Gas tanya aja! 👋' }
         ])
       }
     }
@@ -104,10 +105,10 @@ export default function ChatPage() {
           user_id: user.id,
           ...logicEvent
         })
-        
+
         // 2. Save chat to history
-        const assistantMessage = `**[PATIH LOGIC MODE]**\n\nWaduh bos, API lagi gempor nich, tapi Patih tetep gass pake Logic Mode! 🤖✅\n\nAgenda **"${logicEvent.title}"** udah Patih masukin ke kalender buat tanggal **${logicEvent.event_date}** jam **${logicEvent.start_time.slice(0,5)}**. Aman terkendali! 🫡`
-        
+        const assistantMessage = `**[Yono LOGIC MODE]**\n\nWaduh bos, API lagi gempor nich, tapi Yono tetep gass pake Logic Mode! 🤖✅\n\nAgenda **"${logicEvent.title}"** udah Yono masukin ke kalender buat tanggal **${logicEvent.event_date}** jam **${logicEvent.start_time.slice(0, 5)}**. Aman terkendali! 🫡`
+
         await supabase.from('chat_history').insert([
           { user_id: user.id, role: 'user', content: userMessage },
           { user_id: user.id, role: 'assistant', content: assistantMessage }
@@ -116,9 +117,9 @@ export default function ChatPage() {
         if (!eventError) {
           setMessages(prev => {
             const newMessages = [...prev]
-            newMessages[newMessages.length - 1] = { 
-                role: 'assistant', 
-                content: assistantMessage 
+            newMessages[newMessages.length - 1] = {
+              role: 'assistant',
+              content: assistantMessage
             }
             return newMessages
           })
@@ -137,9 +138,7 @@ export default function ChatPage() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
 
-    // Add an empty assistant message to be populated by the stream
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }])
-
+    // Instead of adding an empty bubble immediately, we wait for the first chunk
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -147,11 +146,9 @@ export default function ChatPage() {
         body: JSON.stringify({ message: userMessage, history: messages.slice(-6) }),
       })
 
-      if (!response.ok) throw new Error("Gagal dapet balesan dari Patih.")
+      if (!response.ok) throw new Error("Gagal dapet balesan dari Yono ai.")
 
       const reader = response.body?.getReader()
-      // decoder was unused, removing it
-
       let accumulatedContent = ""
 
       if (reader) {
@@ -160,25 +157,35 @@ export default function ChatPage() {
           if (done) break
 
           const chunk = new TextDecoder().decode(value)
-          accumulatedContent += chunk
-
-          // If we hit a technical error message in the stream, try fallback
-          if (accumulatedContent.includes("kendala teknis")) {
-            const worked = await handleLogicFallback(userMessage)
-            if (worked) {
-              setIsLoading(false)
-              return
+          
+          if (!accumulatedContent && chunk.trim()) {
+            // First meaningful chunk! Add the assistant message now
+            accumulatedContent += chunk
+            setMessages(prev => [...prev, { role: 'assistant', content: accumulatedContent }])
+          } else if (accumulatedContent) {
+            accumulatedContent += chunk
+            
+            // If we hit a technical error message in the stream, try fallback
+            if (accumulatedContent.includes("kendala teknis")) {
+              const worked = await handleLogicFallback(userMessage)
+              if (worked) {
+                setIsLoading(false)
+                return
+              }
             }
+
+            setMessages(prev => {
+              const newMessages = [...prev]
+              newMessages[newMessages.length - 1] = {
+                role: 'assistant',
+                content: accumulatedContent
+              }
+              return newMessages
+            })
           }
-
-          setMessages(prev => {
-            const newMessages = [...prev]
-            newMessages[newMessages.length - 1] = {
-              role: 'assistant',
-              content: accumulatedContent
-            }
-            return newMessages
-          })
+          
+          // Smooth reveal delay
+          await new Promise(resolve => setTimeout(resolve, 20))
         }
       }
     } catch {
@@ -188,14 +195,10 @@ export default function ChatPage() {
         return
       }
 
-      setMessages(prev => {
-        const newMessages = [...prev]
-        newMessages[newMessages.length - 1] = {
-          role: 'assistant',
-          content: "Waduh bos, sori.. koneksi Patih lagi bapuk nih. Coba lagi ya! 🙏"
-        }
-        return newMessages
-      })
+      setMessages(prev => [
+        ...prev, 
+        { role: 'assistant', content: "Waduh bos, sori.. koneksi Yono lagi bapuk nih. Coba lagi ya! 🙏" }
+      ])
     } finally {
       setIsLoading(false)
     }
@@ -209,7 +212,7 @@ export default function ChatPage() {
             <Bot size={28} />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase leading-none">Patih <span className="gold-text-gradient">AI</span></h1>
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase leading-none">Yono <span className="gold-text-gradient">AI</span></h1>
             <div className="flex items-center text-[10px] font-black text-[#d4af37] uppercase tracking-widest mt-1">
               <span className="w-2 h-2 bg-[#d4af37] rounded-full mr-2 animate-pulse"></span>
               Ready To Ngebabu
@@ -218,7 +221,7 @@ export default function ChatPage() {
         </div>
         <div className="hidden md:flex bg-black/40 backdrop-blur-md shadow-sm border border-white/5 px-4 py-2 rounded-2xl items-center">
           <Sparkles size={14} className="mr-2 text-[#d4af37]" />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Gemini 1.5 Flash</span>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Yono 4.5 Boost</span>
         </div>
       </div>
 
@@ -234,14 +237,15 @@ export default function ChatPage() {
                   {m.role === 'user' ? <User size={20} /> : <Bot size={20} />}
                 </div>
                 <div className={`p-5 md:p-6 rounded-[2rem] text-sm md:text-base font-bold tracking-tight leading-relaxed ${m.role === 'user'
-                    ? 'bg-[#1a1a1a] text-white border border-white/5 rounded-tr-none shadow-xl shadow-black'
-                    : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
+                  ? 'bg-[#1a1a1a] text-white border border-white/5 rounded-tr-none shadow-xl shadow-black'
+                  : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
                   }`}>
                   {m.role === 'assistant' ? (
                     <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-strong:text-[#d4af37] prose-li:text-slate-300">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {m.content}
                       </ReactMarkdown>
+                      {isLoading && idx === messages.length - 1 && <span className="typing-cursor">┃</span>}
                     </div>
                   ) : (
                     m.content
@@ -250,11 +254,11 @@ export default function ChatPage() {
               </div>
             </div>
           ))}
-          {isLoading && !messages[messages.length - 1]?.content && (
+          {isLoading && (!messages.length || messages[messages.length - 1]?.role !== 'assistant') && (
             <div className="flex justify-start animate-in fade-in duration-300">
               <div className="flex items-center space-x-3 bg-white/5 p-5 rounded-[2rem] rounded-tl-none border border-white/5">
                 <Loader2 size={18} className="text-[#d4af37] animate-spin" />
-                <span className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Patih lagi mikir...</span>
+                <span className="text-[10px] text-[#d4af37] font-black uppercase tracking-widest">Yono lagi mikir...</span>
               </div>
             </div>
           )}
@@ -266,7 +270,7 @@ export default function ChatPage() {
             <input
               type="text"
               className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-4 md:py-5 pl-8 pr-16 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-gold-500/10 focus:border-gold-500/50 transition-all shadow-sm tracking-tight text-white placeholder:text-slate-600"
-              placeholder="Curhat ke Patih AI, Ngab..."
+              placeholder="Curhat ke Yono AI, Cuy..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -281,6 +285,24 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .typing-cursor {
+          display: inline-block;
+          color: #d4af37;
+          animation: blink 0.8s infinite;
+          font-weight: black;
+          margin-left: 4px;
+        }
+        @keyframes shimmer {
+          100% {
+            left: 100%;
+          }
+        }
+      `}</style>
     </div>
   )
 }

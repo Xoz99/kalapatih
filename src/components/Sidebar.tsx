@@ -12,7 +12,7 @@ const navItems = [
   { name: 'Basecamp', href: '/', icon: Home },
   { name: 'Agenda', href: '/calendar', icon: CalendarDays },
   { name: 'Input PDF', href: '/import', icon: Upload },
-  { name: 'Patih AI', href: '/chat', icon: MessageSquare },
+  { name: 'Yono AI', href: '/chat', icon: MessageSquare },
   { name: 'List Kerjaan', href: '/tasks', icon: CheckSquare },
 ]
 
@@ -60,7 +60,7 @@ export default function Sidebar() {
         <div className="w-10 h-10 bg-gradient-to-br from-[#d4af37] to-[#aa8418] rounded-xl flex items-center justify-center text-black shadow-lg shadow-gold-900/20">
           <Bot size={24} />
         </div>
-        <span className="text-xl font-black tracking-tighter gold-text-gradient uppercase">KalaPatih</span>
+        <span className="text-xl font-black tracking-tighter gold-text-gradient uppercase">KalaYono</span>
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar pr-2 -mr-2">

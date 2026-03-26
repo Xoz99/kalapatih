@@ -10,12 +10,63 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState({
+    name: '',
+    university: '',
+    semester: ''
+  });
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('users')
+          .select('name, university, semester')
+          .eq('id', user.id)
+          .single();
+        if (data) {
+          setProfile({
+            name: data.name || '',
+            university: data.university || '',
+            semester: data.semester?.toString() || ''
+          });
+        }
+      }
+    };
+    fetchProfile();
+  }, [supabase]);
+
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          name: profile.name,
+          university: profile.university,
+          semester: parseInt(profile.semester) || null
+        });
+      
+      if (!error) {
+        setActiveModal(null);
+        router.refresh(); // Update sidebar name
+      } else {
+        alert("Gagal simpan ngab: " + error.message);
+      }
+    }
+    setLoading(false);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
+
   return (
     <div className="max-w-[800px] mx-auto px-6 md:px-10 py-10 space-y-10 animate-in fade-in duration-700">
       <div className="flex items-center justify-between">
@@ -52,15 +103,41 @@ export default function SettingsPage() {
                 <div className="w-full space-y-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Nama Display</label>
-                    <input type="text" placeholder="Andrian Adi" className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all" />
+                    <input 
+                      type="text" 
+                      value={profile.name}
+                      onChange={(e) => setProfile({...profile, name: e.target.value})}
+                      placeholder="Contoh: Andrian Adi" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all" 
+                    />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Bio Singkat</label>
-                    <textarea placeholder="Productivity enthusiast & Tech lead." className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all h-24 resize-none" />
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Universitas</label>
+                    <input 
+                      type="text" 
+                      value={profile.university}
+                      onChange={(e) => setProfile({...profile, university: e.target.value})}
+                      placeholder="Contoh: Telkom University" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Semester</label>
+                    <input 
+                      type="number" 
+                      value={profile.semester}
+                      onChange={(e) => setProfile({...profile, semester: e.target.value})}
+                      placeholder="Contoh: 6" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all" 
+                    />
                   </div>
                 </div>
-                <button className="w-full bg-gradient-to-r from-[#d4af37] to-[#aa8418] text-black font-black py-4 rounded-2xl shadow-lg shadow-gold-900/20 active:scale-95 transition-all">
-                  SIMPAN PERUBAHAN
+                <button 
+                  onClick={handleSaveProfile}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-[#d4af37] to-[#aa8418] text-black font-black py-4 rounded-2xl shadow-lg shadow-gold-900/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {loading ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN'}
                 </button>
               </div>
             </div>
@@ -140,7 +217,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="pt-10 border-t border-white/5 text-center">
-        <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.5em]">KalaPatih System • v1.0.4-kalcers</p>
+        <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.5em]">KalaYono System • v1.0.4-kalcers</p>
       </div>
     </div>
   );

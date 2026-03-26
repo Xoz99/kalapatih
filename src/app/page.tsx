@@ -717,7 +717,7 @@ export default function Home() {
           <div className="bg-[#0b0b0b] rounded-[3.5rem] border border-white/10 p-12 relative overflow-hidden h-full flex flex-col justify-center min-h-[500px]">
             <div className="relative z-10">
               <div className="flex flex-col space-y-6">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.6em] text-[#d4af37] opacity-50">Kalam Patih</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.6em] text-[#d4af37] opacity-50">Kalam Yono</h3>
                 <p className="text-3xl font-black text-white uppercase tracking-tight leading-[1.1]">
                   &quot;{currentQuote.quote}&quot;
                 </p>
@@ -861,7 +861,7 @@ export default function Home() {
                 </button>
                 <div className="text-center">
                   <p className="text-[7px] font-black text-slate-600 uppercase tracking-widest italic flex items-center justify-center">
-                    <Sparkles size={10} className="mr-1.5 opacity-50" /> Syncing to Patih Core
+                    <Sparkles size={10} className="mr-1.5 opacity-50" /> Syncing to Yono Core
                   </p>
                 </div>
               </div>
@@ -878,7 +878,7 @@ export default function Home() {
               <Trophy size={48} className="stroke-[2.5]" />
             </div>
             <h2 className="text-5xl font-black text-[#d4af37] uppercase tracking-tighter mb-4">Level Up</h2>
-            <p className="text-xl font-black text-white uppercase tracking-widest mb-10">Patih System: Level {justLeveledUpTo}</p>
+            <p className="text-xl font-black text-white uppercase tracking-widest mb-10">Yono System: Level {justLeveledUpTo}</p>
             <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent mb-10"></div>
             <button
               onClick={() => setIsLevelUpModalOpen(false)}

@@ -11,7 +11,7 @@ export default function Navbar() {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [userName, setUserName] = useState('Boss')
   const [notifications] = useState<{ id: number; title: string; message: string; type: string; time: string }[]>([
-    { id: 1, title: 'Selamat Datang!', message: 'Selamat datang di KalaPatih App, Ngab. Mari mulai berjuang!', type: 'info', time: 'Baru saja' },
+    { id: 1, title: 'Selamat Datang!', message: 'Selamat datang di KalaYono App, Ngab. Mari mulai berjuang!', type: 'info', time: 'Baru saja' },
     { id: 2, title: 'Lengkapi Profil', message: 'Tinggi dan berat badan lu belum lengkap nih.', type: 'warning', time: '1j yang lalu' }
   ])
 
@@ -29,14 +29,14 @@ export default function Navbar() {
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10">
         <div className="flex flex-col md:hidden">
           <span className="text-[9px] font-black text-[#d4af37] uppercase tracking-[0.2em] leading-none mb-1">
-            {pathname === '/' ? 'Selamat Datang Kembali!' : 'KalaPatih App'}
+            {pathname === '/' ? 'Selamat Datang Kembali!' : 'KalaYono App'}
           </span>
           <span className="text-sm font-black text-white uppercase tracking-tighter leading-none">
             {pathname === '/' ? `Hallo ${userName} 👋` :
               pathname === '/calendar' ? 'Weekly Schedule' :
-                pathname === '/chat' ? 'Patih AI Chat' :
+                pathname === '/chat' ? 'Yono AI Chat' :
                   pathname === '/tasks' ? 'Nugas List' :
-                    pathname === '/import' ? 'Import Jadwal' : 'KalaPatih'}
+                    pathname === '/import' ? 'Import Jadwal' : 'KalaYono'}
           </span>
         </div>
 
