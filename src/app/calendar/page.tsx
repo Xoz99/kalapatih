@@ -97,14 +97,22 @@ export default function CalendarPage() {
     const daysNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const dayOfWeek = daysNames[new Date(formDate).getDay()]
 
-    const payload: any = formCategory === 'event' 
-      ? { title: formTitle, event_date: formDate, start_time: formStartTime, end_time: formEndTime }
-      : { subject: formTitle, day_of_week: dayOfWeek, start_time: formStartTime, end_time: formEndTime, room: formRoom }
-
     if (editingItem) {
-      await supabase.from(table).update(payload).eq('id', editingItem.id)
+      if (formCategory === 'event') {
+        const payload = { title: formTitle, event_date: formDate, start_time: formStartTime, end_time: formEndTime }
+        await supabase.from(table).update(payload).eq('id', editingItem.id)
+      } else {
+        const payload = { subject: formTitle, day_of_week: dayOfWeek, start_time: formStartTime, end_time: formEndTime, room: formRoom }
+        await supabase.from(table).update(payload).eq('id', editingItem.id)
+      }
     } else {
-      await supabase.from(table).insert({ ...payload, user_id: user.id })
+      if (formCategory === 'event') {
+        const payload = { user_id: user.id, title: formTitle, event_date: formDate, start_time: formStartTime, end_time: formEndTime }
+        await supabase.from(table).insert(payload)
+      } else {
+        const payload = { user_id: user.id, subject: formTitle, day_of_week: dayOfWeek, start_time: formStartTime, end_time: formEndTime, room: formRoom }
+        await supabase.from(table).insert(payload)
+      }
     }
     
     setIsModalOpen(false)

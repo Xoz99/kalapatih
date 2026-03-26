@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { UploadCloud, FileText, Sparkles, Loader2, Plus, Trash2, Save, Calendar, Clock, MapPin } from 'lucide-react'
+import { UploadCloud, FileText, Sparkles, Loader2, Plus, Trash2, Save, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ImportPage() {

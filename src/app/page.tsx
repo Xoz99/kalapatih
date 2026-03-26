@@ -133,11 +133,11 @@ export default function Home() {
         setIsLevelUpModalOpen(true);
       }
 
-      setPlayerStats(prev => ({ 
-        ...prev, 
-        xp: finalXp, 
-        level: newLevel, 
-        max_xp: 100 + (newLevel - 1) * 20 
+      setPlayerStats(prev => ({
+        ...prev,
+        xp: finalXp,
+        level: newLevel,
+        max_xp: 100 + (newLevel - 1) * 20
       }));
 
       // If level up, refresh habits to unlock new ones and update titles
@@ -147,8 +147,8 @@ export default function Home() {
         setHabits(prevHabits => {
           const doneIds = prevHabits.filter(h => h.done).map(h => h.id);
           return todayHabitsPool
-            .filter((h: any) => newLevel >= (h.minLevel || 1))
-            .map((h: any) => {
+            .filter((h: { minLevel?: number }) => newLevel >= (h.minLevel || 1))
+            .map((h: { title: string; type?: string; minLevel?: number; id: string }) => {
               let dynamicTitle = h.title;
               if (h.type === 'pushup') {
                 dynamicTitle = `Push Up ${10 + (newLevel * 5)}x`;
@@ -157,10 +157,10 @@ export default function Home() {
               } else if (h.type === 'reading') {
                 dynamicTitle = `Baca Buku ${5 + newLevel} Hal`;
               }
-              return { 
-                ...h, 
+              return {
+                ...h,
                 title: dynamicTitle,
-                done: doneIds.includes(h.id) 
+                done: doneIds.includes(h.id)
               };
             });
         });
@@ -312,8 +312,8 @@ export default function Home() {
         });
       } else if (fallback) {
         const fallbackLevel = fallback.level ?? 1;
-        setPlayerStats(prev => ({ 
-          ...prev, 
+        setPlayerStats(prev => ({
+          ...prev,
           ...fallback,
           max_xp: 100 + (fallbackLevel - 1) * 20
         }));
@@ -333,7 +333,7 @@ export default function Home() {
 
       const completedIds = habitLogs?.map(log => log.habit_id) || [];
       const todayHabitsPool = dailyHabits[currentDay] || [];
-      
+
       const userLevel = userData?.level ?? fallback?.level ?? 1;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -347,10 +347,10 @@ export default function Home() {
           dynamicTitle = `Baca Buku ${5 + userLevel} Hal`;
         }
 
-        return { 
-          ...h, 
+        return {
+          ...h,
           title: dynamicTitle,
-          done: completedIds.includes(h.id) 
+          done: completedIds.includes(h.id)
         };
       }));
 
@@ -370,7 +370,7 @@ export default function Home() {
       setLoading(false);
     }
     getDashboardData();
-  }, [supabase]);
+  }, [supabase, playerStats.level]);
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 md:px-10 space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
