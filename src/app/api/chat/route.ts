@@ -13,7 +13,6 @@ const getGenAI = () => {
 export async function GET() {
   try {
     console.log("GET /api/chat - Fetching history");
-    const genAI = getGenAI();
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -278,7 +277,7 @@ RULES:
 Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
       });
 
-      let chatContent: Content[] = (history || []).map((msg: { role: string; content: string }) => ({
+      const chatContent: Content[] = (history || []).map((msg: { role: string; content: string }) => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content } as Part],
       }));
@@ -383,7 +382,7 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
               if (!id) {
                 toolResponse = { name: "edit_event", response: { success: false, error: "ID agenda wajib diisi untuk edit." } };
               } else {
-                const updateData: any = {};
+                const updateData: Record<string, string | null> = {};
                 if (title) updateData.title = title;
                 if (date) updateData.event_date = date;
                 if (start_time) updateData.start_time = start_time;
