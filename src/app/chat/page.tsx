@@ -272,15 +272,20 @@ export default function ChatPage() {
               className="w-full bg-white/5 border border-white/10 rounded-full py-3 md:py-5 pl-5 md:pl-8 pr-14 md:pr-16 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-gold-500/10 focus:border-gold-500/50 transition-all shadow-sm tracking-tight text-white placeholder:text-slate-600"
               placeholder="Curhat ke Yono AI, Cuy..."
               value={input}
+              disabled={isLoading}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             />
             <button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 md:right-3 w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black rounded-full transition-all shadow-lg shadow-gold-900/40 disabled:opacity-50 active:scale-90 flex items-center justify-center"
+              className="absolute right-2 md:right-3 w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-[#d4af37] to-[#aa8418] text-black rounded-full transition-all shadow-lg shadow-gold-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-0"
             >
-              <Send size={18} className="md:size-20" />
+              {isLoading ? (
+                <Loader2 size={18} className="md:size-20 animate-spin" />
+              ) : (
+                <Send size={18} className="md:size-20 relative right-0.5" />
+              )}
             </button>
           </div>
         </div>

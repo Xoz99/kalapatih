@@ -37,3 +37,10 @@ CREATE POLICY "Allow all access" ON public.habit_logs FOR ALL USING (true) WITH 
 -- Insert some default habits for "Glowup"
 -- Note: Replace '{USER_ID}' with actual ID or handle it in the application layer
 -- For now, we'll let the application layer create the first habits if they don't exist.
+
+-- ============================================
+-- FIX UPSERT ERROR
+-- Tambahkan constraint unik ini kalau AI gagal mencatat habit (log_habit)
+-- ============================================
+ALTER TABLE public.habit_logs
+  ADD CONSTRAINT habit_logs_user_habit_date_unique UNIQUE (user_id, habit_id, completed_at);

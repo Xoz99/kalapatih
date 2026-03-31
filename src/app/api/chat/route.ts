@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient();
     const { data: authData, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !authData?.user) {
       console.error("POST /api/chat - Auth Error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     try {
       console.log("POST /api/chat - Syncing user & fetching profile:", user.id);
-      
+
       const { data: profile } = await supabase
         .from('users')
         .select('*')
@@ -91,7 +91,26 @@ export async function POST(req: NextRequest) {
     const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = new Date();
     const todayNameEn = daysEn[today.getDay()];
-    const todayDateStr = today.toISOString().split('T')[0];
+    // Prevent timezone offset bugs by formatting local date directly
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayDateStr = `${year}-${month}-${day}`;
+
+    // Generate Next 7 Days Context mapping to prevent Gemini from doing wrong Date Math
+    const upcomingDays = [];
+    const daysId = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    for (let i = 0; i <= 7; i++) {
+      const pDate = new Date(today);
+      pDate.setDate(pDate.getDate() + i);
+      const pYear = pDate.getFullYear();
+      const pMonth = String(pDate.getMonth() + 1).padStart(2, '0');
+      const pDay = String(pDate.getDate()).padStart(2, '0');
+
+      const label = i === 0 ? 'Hari ini' : i === 1 ? 'Besok' : daysId[pDate.getDay()];
+      upcomingDays.push(`- ${label} (${daysEn[pDate.getDay()]}): ${pYear}-${pMonth}-${pDay}`);
+    }
+    const calendarContext = upcomingDays.join('\n');
 
     const tools = [
       {
@@ -265,6 +284,17 @@ export async function POST(req: NextRequest) {
                 date: { type: "string", description: "Tanggal pengecekan (YYYY-MM-DD), default hari ini." }
               }
             },
+          },
+          {
+            name: "cek_tanggal_merah",
+            description: "Cek daftar hari libur nasional (tanggal merah) di tahun tertentu untuk wilayah Indonesia.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                year: { type: "number", description: "Tahun (misal: 2026)" }
+              },
+              required: ["year"]
+            }
           }
         ],
       },
@@ -272,10 +302,10 @@ export async function POST(req: NextRequest) {
 
     let chat;
     try {
-      console.log("POST /api/chat - Initializing model:", "gemini-2.5-flash-lite");
+      console.log("POST /api/chat - Initializing model:", "gemini-2.5-flash");
       const genAI = getGenAI();
       const actualModel = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tools: tools as any,
         systemInstruction: `Lu adalah Yono AI (Kalapatih), asisten sekaligus sahabat Sultan Tuan ${profileName}. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'.
@@ -292,7 +322,7 @@ KONTEKS SULTAN:
 - Semester: ${profileSem || 'Belum diatur'}
 
 RULES:
-1. Panggil Sultan ${profileName} dengan sebutan 'bos' atau 'ngab'.
+1. Panggil SULTAN ${profileName} dengan sebutan 'cuy' atau 'cok'.
 2. JANGAN PERNAH berhalusinasi DATA. Selalu gunakan TOOLS untuk ambil/simpan data jadwal/tugas/habit.
 3. ANTI-HALUSINASI: Kalau hasil pencarian dari database KOSONG (empty), katakan sejujurnya. JANGAN mengarang jadwal atau tugas fiktif.
 4. Kalau bos tanya 'besok ada apa' atau 'kegiatan hari ini', WAJIB panggil 'get_holistic_context'.
@@ -306,7 +336,9 @@ RULES:
 12. Kalau bos tanya 'gimana kondisi gw minggu ini?' atau sejenisnya, panggil 'get_health_summary'.
 13. Proaktif tanyain kesehatan bos kalau konteks cocok (misal bos bilang capek/pusing/begadang).
 
-Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
+30. Konteks Waktu & Kalender (PANDUAN MUTLAK TANGGAL):
+${calendarContext}
+User ID: ${user.id}`,
       });
 
       const chatContent: Content[] = (history || []).map((msg: { role: string; content: string }) => ({
@@ -326,9 +358,9 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
       chat = actualModel.startChat({ history: chatContent });
     } catch (modelErr) {
       console.error("POST /api/chat - Model Initialization CRASH:", modelErr);
-      return new Response(JSON.stringify({ 
-        error: "Gagal inisialisasi model AI.", 
-        details: (modelErr instanceof Error ? modelErr.message : String(modelErr)) 
+      return new Response(JSON.stringify({
+        error: "Gagal inisialisasi model AI.",
+        details: (modelErr instanceof Error ? modelErr.message : String(modelErr))
       }), { status: 500 });
     }
 
@@ -368,7 +400,29 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
 
             // Handle Tool logic
             let toolResponse = null;
-            if (toolCall.name === "get_schedule") {
+
+            // Notify user that Yono is thinking/fetching data
+            let toolLoadingMsg = "\n\n*(Lagi ngecek data " + toolCall.name.replace(/_/g, " ") + " di database...)* ⏳\n\n";
+            fullContent += toolLoadingMsg;
+            controller.enqueue(encoder.encode(toolLoadingMsg));
+
+            if (toolCall.name === "cek_tanggal_merah") {
+              try {
+                const { year } = toolCall.args as { year?: number };
+                const targetYear = year || new Date().getFullYear();
+                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${targetYear}/ID`);
+                if (!res.ok) throw new Error("API libur gagal.");
+                const data = await res.json();
+
+                // Map the results to just dates and names to save context window
+                const holidays = data.map((d: any) => ({ tanggal: d.date, nama_libur: d.localName || d.name }));
+                toolResponse = { name: "cek_tanggal_merah", response: { tahun: targetYear, libur_nasional: holidays } };
+              } catch (e) {
+                console.error("cek_tanggal_merah error:", e);
+                toolResponse = { name: "cek_tanggal_merah", response: { error: "Ga bisa akses API kalender libur sekarang bos." } };
+              }
+            }
+            else if (toolCall.name === "get_schedule") {
               const { day } = toolCall.args as { day?: string };
               const { data, error: dbErr } = await supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', day || todayNameEn);
               if (dbErr) {
@@ -470,7 +524,7 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                 if (!targetId && title) {
                   const searchDate = date || todayDateStr;
                   console.log(`TOOL CALL [delete_event]: Searching for "${title}" on ${searchDate}`);
-                  
+
                   const { data: foundEvents } = await supabase
                     .from('events')
                     .select('id')
@@ -485,12 +539,12 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                 }
 
                 if (!targetId) {
-                  toolResponse = { 
-                    name: "delete_event", 
-                    response: { 
-                      success: false, 
-                      error: title ? `Gagal nemuin agenda "${title}" buat dihapus.` : "ID atau Judul wajib ada buat hapus agenda." 
-                    } 
+                  toolResponse = {
+                    name: "delete_event",
+                    response: {
+                      success: false,
+                      error: title ? `Gagal nemuin agenda "${title}" buat dihapus.` : "ID atau Judul wajib ada buat hapus agenda."
+                    }
                   };
                 } else {
                   console.log("TOOL CALL [delete_event]: Deleting ID:", targetId);
@@ -695,9 +749,14 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
               try {
                 const { date } = toolCall.args as { date?: string };
                 const targetDate = date || todayDateStr;
-                
+
                 // For schedules (recurring), we need the day of week for that specific date
-                const targetDayName = date ? daysEn[new Date(date).getDay()] : todayNameEn;
+                let targetDayName = todayNameEn;
+                if (date) {
+                  const [y, m, d] = date.split('-');
+                  const targetDateObj = new Date(Number(y), Number(m) - 1, Number(d));
+                  targetDayName = daysEn[targetDateObj.getDay()];
+                }
 
                 console.log("TOOL CALL [get_holistic_context]:", { targetDate, targetDayName });
 
