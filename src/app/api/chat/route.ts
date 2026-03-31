@@ -402,7 +402,7 @@ User ID: ${user.id}`,
             let toolResponse = null;
 
             // Notify user that Yono is thinking/fetching data
-            let toolLoadingMsg = "\n\n*(Lagi ngecek data " + toolCall.name.replace(/_/g, " ") + " di database...)* ⏳\n\n";
+            const toolLoadingMsg = "\n\n*(Lagi ngecek data " + toolCall.name.replace(/_/g, " ") + " di database...)* ⏳\n\n";
             fullContent += toolLoadingMsg;
             controller.enqueue(encoder.encode(toolLoadingMsg));
 
@@ -415,7 +415,7 @@ User ID: ${user.id}`,
                 const data = await res.json();
 
                 // Map the results to just dates and names to save context window
-                const holidays = data.map((d: any) => ({ tanggal: d.date, nama_libur: d.localName || d.name }));
+                const holidays = data.map((d: { date: string; localName?: string; name: string }) => ({ tanggal: d.date, nama_libur: d.localName || d.name }));
                 toolResponse = { name: "cek_tanggal_merah", response: { tahun: targetYear, libur_nasional: holidays } };
               } catch (e) {
                 console.error("cek_tanggal_merah error:", e);
