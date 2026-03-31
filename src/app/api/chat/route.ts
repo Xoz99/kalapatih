@@ -25,7 +25,7 @@ export async function GET() {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (error) throw error;
 
@@ -232,8 +232,33 @@ export async function POST(req: NextRequest) {
             parameters: { type: "OBJECT", properties: {} },
           },
           {
+            name: "log_health",
+            description: "Catat data kesehatan harian bos (tidur, mood, minum air, berat badan, keluhan fisik). Bisa update partial, contoh cuma tidur doang.",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                date: { type: "string", description: "Tanggal log (YYYY-MM-DD), default hari ini" },
+                sleep_hours: { type: "number", description: "Jam tidur semalam (misal: 6.5)" },
+                mood: { type: "number", description: "Rating mood 1-10 (1=parah, 10=amazing)" },
+                water_glasses: { type: "number", description: "Jumlah gelas air putih yang diminum" },
+                weight_kg: { type: "number", description: "Berat badan (kg)" },
+                notes: { type: "string", description: "Catatan keluhan fisik atau kondisi umum (misal: sakit kepala, badan pegel)" }
+              }
+            },
+          },
+          {
+            name: "get_health_summary",
+            description: "Ambil rangkuman kesehatan bos 7 hari terakhir (jam tidur, mood, minum air, berat, keluhan).",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                days: { type: "number", description: "Jumlah hari ke belakang (default 7)" }
+              }
+            },
+          },
+          {
             name: "get_holistic_context",
-            description: "Mengambil rangkuman semua data bos (Habits, Tugas, Agenda/Event, Jadwal Kuliah) untuk tanggal tertentu.",
+            description: "Mengambil rangkuman semua data bos (Habits, Tugas, Agenda/Event, Jadwal Kuliah, Kesehatan) untuk tanggal tertentu.",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -253,8 +278,13 @@ export async function POST(req: NextRequest) {
         model: "gemini-2.5-flash-lite",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tools: tools as any,
-        systemInstruction: `Lu adalah Yono AI (Kalapatih), asisten Sultan Tuan ${profileName}. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'. 
-Manage jadwal kuliah (recurring), agenda/event (manual), tugas, habit, dan mimpi (goals). Lu adalah Life Coach yang ngebantu bos ${profileName} buat terus glowup. Gunakan Markdown.
+        systemInstruction: `Lu adalah Yono AI (Kalapatih), asisten sekaligus sahabat Sultan Tuan ${profileName}. Gaya bicara asik, Gen Z gaul Indonesia, panggil 'bos' atau 'ngab'.
+Lu punya 2 mode:
+
+🛠️ MODE ASISTEN: Manage jadwal kuliah (recurring), agenda/event (manual), tugas, habit, dan mimpi (goals).
+💬 MODE CURHAT: Lu juga TEMAN CURHAT yang asyik. Bos bisa cerita apa aja — soal hidup, perasaan, masalah, galau, stress, atau apapun. Lu dengerin dengan empati, kasih support, motivasi, dan saran yang bijak tapi tetap santai. Lu juga bisa diajak ngobrol random, ngebahas topik apapun, bercanda, atau sekadar nemenin bos.
+
+Lu adalah Life Coach + Best Friend yang ngebantu bos ${profileName} buat terus glowup lahir batin. Gunakan Markdown.
 
 KONTEKS SULTAN:
 - Nama: ${profileName}
@@ -262,17 +292,19 @@ KONTEKS SULTAN:
 - Semester: ${profileSem || 'Belum diatur'}
 
 RULES:
-1. Hubungi Sultan ${profileName} dengan sebutan 'bos' atau 'ngab'.
-2. JANGAN PERNAH berhalusinasi. Selalu gunakan TOOLS untuk ambil/simpan data.
-3. ANTI-HALUSINASI: Kalau hasil pencarian dari database KOSONG (empty), katakan sejujurnya kalau data tidak ada. JANGAN PERNAH mengarang jadwal atau tugas fiktif. 
+1. Panggil Sultan ${profileName} dengan sebutan 'bos' atau 'ngab'.
+2. JANGAN PERNAH berhalusinasi DATA. Selalu gunakan TOOLS untuk ambil/simpan data jadwal/tugas/habit.
+3. ANTI-HALUSINASI: Kalau hasil pencarian dari database KOSONG (empty), katakan sejujurnya. JANGAN mengarang jadwal atau tugas fiktif.
 4. Kalau bos tanya 'besok ada apa' atau 'kegiatan hari ini', WAJIB panggil 'get_holistic_context'.
-5. Saat kasih rangkuman kegiatan, pastikan sebutkan:
-   - Jadwal Kuliah (university_schedule) -> Data dari daftar mata kuliah rutin.
-   - Agenda Gaskeun (manual_events) -> Data dari event manual yang ditambah sultan. JANGAN SAMPAI KETINGGALAN!
-   - Tugas (pending_tasks)
-   - Habits (all_habits vs completed_habit_ids). Sebutkan mana yang BELUM kelar hari ini.
-6. Gunakan format Markdown yang premium dan enak dibaca.
+5. Saat kasih rangkuman kegiatan, sebutkan: Jadwal Kuliah, Agenda Gaskeun, Tugas, dan Habits.
+6. Gunakan format Markdown yang premium, rapi, dan enak dibaca. Pisahkan section dengan bold header.
 7. Kalau database kasih error, laporin jujur ke bos.
+8. CURHAT MODE: Kalau bos cerita masalah pribadi, galau, stress, atau mau ngobrol santai — JANGAN pakai tools. Langsung respon dengan empati, support, dan saran. Jadilah pendengar yang baik. Boleh pakai emoji buat bikin hangat.
+9. Bisa diajak ngobrol topik apapun: film, musik, game, filosofi, relationship, dll. Respon natural dan asyik.
+10. Kalau bos lagi down, kasih semangat dan motivasi yang genuine, bukan template.
+11. HEALTH MODE: Kalau bos cerita soal kesehatan (tidur, capek, sakit, minum air, berat badan), langsung gunakan tool 'log_health' untuk mencatat. Kasih saran kesehatan yang relevan dan empati.
+12. Kalau bos tanya 'gimana kondisi gw minggu ini?' atau sejenisnya, panggil 'get_health_summary'.
+13. Proaktif tanyain kesehatan bos kalau konteks cocok (misal bos bilang capek/pusing/begadang).
 
 Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
       });
@@ -580,6 +612,85 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                 toolResponse = { name: "list_habit_logs", response: { error: "Gagal ambil data habit." } };
               }
             }
+            else if (toolCall.name === "log_health") {
+              try {
+                const { date, sleep_hours, mood, water_glasses, weight_kg, notes } = toolCall.args as {
+                  date?: string; sleep_hours?: number; mood?: number; water_glasses?: number; weight_kg?: number; notes?: string;
+                };
+                const targetDate = date || todayDateStr;
+                console.log("TOOL CALL [log_health]:", { targetDate, sleep_hours, mood, water_glasses, weight_kg, notes });
+
+                // Build update object with only provided fields
+                const healthData: Record<string, unknown> = { user_id: user.id, log_date: targetDate };
+                if (sleep_hours !== undefined) healthData.sleep_hours = sleep_hours;
+                if (mood !== undefined) healthData.mood = Math.min(10, Math.max(1, mood));
+                if (water_glasses !== undefined) healthData.water_glasses = water_glasses;
+                if (weight_kg !== undefined) healthData.weight_kg = weight_kg;
+                if (notes !== undefined) healthData.notes = notes;
+
+                const { data, error: dbErr } = await supabase
+                  .from('health_logs')
+                  .upsert(healthData, { onConflict: 'user_id, log_date' })
+                  .select();
+
+                if (dbErr) throw dbErr;
+                console.log("log_health SUCCESS:", data?.[0]?.id);
+                toolResponse = { name: "log_health", response: { success: true, health_log: data?.[0] } };
+              } catch (e) {
+                console.error("log_health error:", e);
+                toolResponse = { name: "log_health", response: { success: false, error: "Gagal nyimpen data kesehatan bos." } };
+              }
+            }
+            else if (toolCall.name === "get_health_summary") {
+              try {
+                const { days } = toolCall.args as { days?: number };
+                const lookbackDays = days || 7;
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - lookbackDays);
+                const startDateStr = startDate.toISOString().split('T')[0];
+
+                console.log("TOOL CALL [get_health_summary]:", { lookbackDays, startDateStr });
+
+                const { data, error: dbErr } = await supabase
+                  .from('health_logs')
+                  .select('*')
+                  .eq('user_id', user.id)
+                  .gte('log_date', startDateStr)
+                  .order('log_date', { ascending: false });
+
+                if (dbErr) throw dbErr;
+
+                const logs = data || [];
+                const avgSleep = logs.filter(l => l.sleep_hours).reduce((sum, l) => sum + l.sleep_hours, 0) / (logs.filter(l => l.sleep_hours).length || 1);
+                const avgMood = logs.filter(l => l.mood).reduce((sum, l) => sum + l.mood, 0) / (logs.filter(l => l.mood).length || 1);
+                const avgWater = logs.filter(l => l.water_glasses).reduce((sum, l) => sum + l.water_glasses, 0) / (logs.filter(l => l.water_glasses).length || 1);
+
+                toolResponse = {
+                  name: "get_health_summary",
+                  response: {
+                    period: `${lookbackDays} hari terakhir`,
+                    total_logs: logs.length,
+                    averages: {
+                      sleep_hours: Math.round(avgSleep * 10) / 10,
+                      mood: Math.round(avgMood * 10) / 10,
+                      water_glasses: Math.round(avgWater * 10) / 10
+                    },
+                    recent_logs: logs.slice(0, 7).map(l => ({
+                      date: l.log_date,
+                      sleep: l.sleep_hours,
+                      mood: l.mood,
+                      water: l.water_glasses,
+                      weight: l.weight_kg,
+                      notes: l.notes
+                    })),
+                    health_tips: avgSleep < 6 ? "⚠️ Tidur kurang dari 6 jam rata-rata!" : avgSleep >= 7 ? "✅ Tidur cukup" : "⚠️ Tidur masih kurang ideal"
+                  }
+                };
+              } catch (e) {
+                console.error("get_health_summary error:", e);
+                toolResponse = { name: "get_health_summary", response: { error: "Gagal ambil data kesehatan." } };
+              }
+            }
             else if (toolCall.name === "get_holistic_context") {
               try {
                 const { date } = toolCall.args as { date?: string };
@@ -590,12 +701,13 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
 
                 console.log("TOOL CALL [get_holistic_context]:", { targetDate, targetDayName });
 
-                const [habitsAll, habitsDone, tasksRes, eventsRes, schedulesRes] = await Promise.all([
+                const [habitsAll, habitsDone, tasksRes, eventsRes, schedulesRes, healthRes] = await Promise.all([
                   supabase.from('habits').select('*').eq('user_id', user.id),
                   supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).eq('completed_at', targetDate),
                   supabase.from('tasks').select('*').eq('user_id', user.id).eq('is_done', false),
                   supabase.from('events').select('*').eq('user_id', user.id).eq('event_date', targetDate),
-                  supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', targetDayName)
+                  supabase.from('schedules').select('*').eq('user_id', user.id).eq('day_of_week', targetDayName),
+                  supabase.from('health_logs').select('*').eq('user_id', user.id).eq('log_date', targetDate).maybeSingle()
                 ]);
 
                 toolResponse = {
@@ -607,6 +719,13 @@ Konteks Waktu: Hari ini ${todayNameEn}, ${todayDateStr}. User ID: ${user.id}`,
                     pending_tasks: (tasksRes.data || []).map(t => ({ title: t.title, deadline: t.deadline })),
                     manual_events: (eventsRes.data || []).map(e => ({ title: e.title, time: `${e.start_time}-${e.end_time}`, category: e.category })),
                     university_schedule: (schedulesRes.data || []).map(s => ({ subject: s.subject, time: `${s.start_time}-${s.end_time}`, room: s.room })),
+                    health_today: healthRes.data ? {
+                      sleep_hours: healthRes.data.sleep_hours,
+                      mood: healthRes.data.mood,
+                      water_glasses: healthRes.data.water_glasses,
+                      weight_kg: healthRes.data.weight_kg,
+                      notes: healthRes.data.notes
+                    } : null,
                     status: (habitsAll.data?.length === 0 && tasksRes.data?.length === 0 && eventsRes.data?.length === 0 && schedulesRes.data?.length === 0) ? "No data found in database for this date. Tell user it's empty." : "Success"
                   }
                 };

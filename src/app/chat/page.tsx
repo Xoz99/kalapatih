@@ -205,8 +205,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] flex flex-col animate-in fade-in slide-in-from-bottom-6 duration-1000">
-      <div className="flex items-center justify-between mb-8 px-4 md:px-2">
+    <div className="max-w-[1440px] mx-auto px-2 md:px-10 h-[calc(100vh-130px)] md:h-[calc(100vh-160px)] flex flex-col animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      <div className="flex items-center justify-between mb-4 md:mb-8 px-2 md:px-2">
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 bg-gradient-to-br from-[#d4af37] to-[#aa8418] rounded-2xl flex items-center justify-center text-black shadow-lg shadow-gold-900/20 transform -rotate-3">
             <Bot size={28} />
@@ -225,23 +225,23 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex-1 bg-[#0d0d0d] border border-white/5 shadow-2xl shadow-black rounded-[3rem] mb-6 overflow-hidden flex flex-col relative">
+      <div className="flex-1 bg-[#0d0d0d] border border-white/5 shadow-2xl shadow-black rounded-2xl md:rounded-[3rem] mb-2 md:mb-6 overflow-hidden flex flex-col relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 scrollbar-hide relative z-10">
+        <div className="flex-1 overflow-y-auto p-3 md:p-10 space-y-4 md:space-y-8 scrollbar-hide relative z-10">
           {messages.map((m, idx) => (
             <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-              <div className={`flex max-w-[90%] md:max-w-[75%] ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${m.role === 'user' ? 'bg-white/10 text-slate-400 ml-4' : 'bg-[#d4af37]/10 text-[#d4af37] mr-4'
+              <div className={`flex max-w-[100%] md:max-w-[75%] ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`hidden md:flex w-10 h-10 rounded-xl items-center justify-center shrink-0 shadow-sm ${m.role === 'user' ? 'bg-white/10 text-slate-400 ml-4' : 'bg-[#d4af37]/10 text-[#d4af37] mr-4'
                   }`}>
                   {m.role === 'user' ? <User size={20} /> : <Bot size={20} />}
                 </div>
-                <div className={`p-5 md:p-6 rounded-[2rem] text-sm md:text-base font-bold tracking-tight leading-relaxed ${m.role === 'user'
-                  ? 'bg-[#1a1a1a] text-white border border-white/5 rounded-tr-none shadow-xl shadow-black'
-                  : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
+                <div className={`p-3 md:p-6 rounded-xl md:rounded-[2rem] text-[13px] md:text-base tracking-tight leading-relaxed ${m.role === 'user'
+                  ? 'bg-[#1a1a1a] text-white border border-white/5 rounded-tr-none shadow-xl shadow-black font-bold'
+                  : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none font-normal'
                   }`}>
                   {m.role === 'assistant' ? (
-                    <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-strong:text-[#d4af37] prose-li:text-slate-300">
+                    <div className="chat-message prose prose-sm md:prose-base prose-invert max-w-none prose-p:leading-relaxed prose-p:my-2 prose-strong:text-[#d4af37] prose-strong:block prose-strong:mt-4 prose-strong:mb-1 prose-li:text-slate-300 prose-ul:my-1 prose-ol:my-1">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {m.content}
                       </ReactMarkdown>
@@ -265,11 +265,11 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 md:p-6 bg-black/40 backdrop-blur-md border-t border-white/5">
+        <div className="p-2 md:p-6 bg-black/40 backdrop-blur-md border-t border-white/5">
           <div className="relative flex items-center max-w-3xl mx-auto w-full">
             <input
               type="text"
-              className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-4 md:py-5 pl-8 pr-16 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-gold-500/10 focus:border-gold-500/50 transition-all shadow-sm tracking-tight text-white placeholder:text-slate-600"
+              className="w-full bg-white/5 border border-white/10 rounded-full py-3 md:py-5 pl-5 md:pl-8 pr-14 md:pr-16 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-gold-500/10 focus:border-gold-500/50 transition-all shadow-sm tracking-tight text-white placeholder:text-slate-600"
               placeholder="Curhat ke Yono AI, Cuy..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
